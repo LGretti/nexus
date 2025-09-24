@@ -1,0 +1,13 @@
+# Binários compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+nexus-api
+
+# Arquivos de sistema
+.DS_Store
+
+# Arquivos do VSCode
+.vscode/
