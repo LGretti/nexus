@@ -10,8 +10,7 @@ import (
 	"nexus/api/internal/models"
 )
 
-
-//Cadastro de Empresa
+// Cadastro de Empresa
 func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
@@ -28,12 +27,12 @@ func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	//Validações negociais
 	if empresa.Nome == "" {
 		RespondWithError(w, http.StatusBadRequest, "O nome da empresa não pode ser vazio")
-  	  return
+		return
 	}
 
 	if empresa.CNPJ == "" {
 		RespondWithError(w, http.StatusBadRequest, "O CNPJ não pode ser vazio")
-  	  return
+		return
 	}
 
 	//Tudo certo, prepara para salvar
@@ -75,7 +74,7 @@ func CreateEmpresasEmLoteHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(empresasSalvas)
 }
 
-//Retorna todas as empresas cadastradas
+// Retorna todas as empresas cadastradas
 func GetEmpresasHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
@@ -84,7 +83,7 @@ func GetEmpresasHandler(w http.ResponseWriter, r *http.Request) {
 
 	empresas, err := database.GetEmpresas()
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao obter empresas: "+err.Error())
+		RespondWithError(w, http.StatusNotFound, "Erro ao obter lista de empresas: "+err.Error())
 		return
 	}
 
@@ -93,7 +92,7 @@ func GetEmpresasHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(empresas)
 }
 
-//Retorna uma empresa pelo ID
+// Retorna uma empresa pelo ID
 func GetEmpresaByIDHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
@@ -110,13 +109,13 @@ func GetEmpresaByIDHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
+		RespondWithError(w, http.StatusBadRequest, "ID da empresa inválido")
 		return
 	}
 
 	empresa, err := database.GetEmpresaByID(id)
 	if err != nil {
-		RespondWithError(w, http.StatusNotFound, err.Error())
+		RespondWithError(w, http.StatusNotFound, "Erro ao obter empresa: "+err.Error())
 		return
 	}
 
@@ -125,7 +124,7 @@ func GetEmpresaByIDHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(empresa)
 }
 
-//Atualiza uma empresa
+// Atualiza uma empresa
 func UpdateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
@@ -143,13 +142,13 @@ func UpdateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
+		RespondWithError(w, http.StatusBadRequest, "ID da empresa inválido")
 		return
 	}
 
 	empresa, err := database.UpdateEmpresa(id, empresaAtualizada)
 	if err != nil {
-		RespondWithError(w, http.StatusNotFound, err.Error())
+		RespondWithError(w, http.StatusNotFound, "Erro ao localizar empresa: "+err.Error())
 		return
 	}
 
@@ -158,7 +157,7 @@ func UpdateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(empresa)
 }
 
-//Deleta uma empresa
+// Deleta uma empresa
 func DeleteEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
@@ -169,7 +168,7 @@ func DeleteEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
+		RespondWithError(w, http.StatusBadRequest, "ID da empresa não localizado")
 		return
 	}
 

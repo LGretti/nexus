@@ -18,7 +18,7 @@ func NewRouter() *http.ServeMux {
 		case http.MethodDelete:
 			DeleteEmpresaHandler(w, r)
 		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+			RespondWithError(w, http.StatusMethodNotAllowed, "Método inválido")
 		}
 	})
 
@@ -27,7 +27,22 @@ func NewRouter() *http.ServeMux {
 		case http.MethodPost:
 			CreateEmpresasEmLoteHandler(w, r)
 		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+			RespondWithError(w, http.StatusMethodNotAllowed, "Método inválido")
+		}
+	})
+
+	mux.HandleFunc("/usuarios/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			CreateUsuarioHandler(w, r)
+		case http.MethodGet:
+			GetUsuarioByIDHandler(w, r)
+		case http.MethodPut:
+			UpdateUsuarioHandler(w, r)
+		case http.MethodDelete:
+			DeleteUsuarioHandler(w, r)
+		default:
+			RespondWithError(w, http.StatusMethodNotAllowed, "Método inválido")
 		}
 	})
 
