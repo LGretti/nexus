@@ -22,15 +22,6 @@ func NewRouter() *http.ServeMux {
 		}
 	})
 
-	mux.HandleFunc("/empresas/lote", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			CreateEmpresasEmLoteHandler(w, r)
-		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método inválido")
-		}
-	})
-
 	mux.HandleFunc("/usuarios/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:

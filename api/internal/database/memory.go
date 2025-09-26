@@ -7,30 +7,8 @@ import (
 
 // Empresa
 var empresas []models.Empresa
-var nextIDEmpresa int = 1
 
-func CadEmpresa(empresa models.Empresa) (models.Empresa, error) {
-	empresa.ID = nextIDEmpresa
-	nextIDEmpresa++
-
-	empresas = append(empresas, empresa)
-	return empresa, nil
-}
-
-func CadEmpresasEmLote(novasEmpresas []models.Empresa) ([]models.Empresa, error) {
-	var empresasSalvas []models.Empresa
-
-	for _, empresa := range novasEmpresas {
-		empresa.ID = nextIDEmpresa
-		nextIDEmpresa++
-		empresas = append(empresas, empresa)
-		empresasSalvas = append(empresasSalvas, empresa)
-	}
-
-	return empresasSalvas, nil
-}
-
-func GetEmpresas() ([]models.Empresa, error) {
+func GetEmpresass() ([]models.Empresa, error) {
 	if len(empresas) == 0 {
 		return nil, errors.New("Nenhuma empresa encontrada")
 	}

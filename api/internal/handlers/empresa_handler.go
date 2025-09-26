@@ -10,68 +10,70 @@ import (
 	"nexus/api/internal/models"
 )
 
-// Cadastro de Empresa
+// Cadastro de Empresas
 func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
 		return
 	}
 
-	var empresa models.Empresa
-	err := json.NewDecoder(r.Body).Decode(&empresa)
-	if err != nil {
+	var payload interface{}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 
-	//Validações negociais
-	if empresa.Nome == "" {
-		RespondWithError(w, http.StatusBadRequest, "O nome da empresa não pode ser vazio")
+	var empresasParaSalvar []models.Empresa
+
+	switch p := payload.(type) {
+	case map[string]interface{}:
+		var empresa models.Empresa
+		jsonBytes, _ := json.Marshal(p)
+		if err := json.Unmarshal(jsonBytes, &empresa); err != nil {
+			RespondWithError(w, http.StatusBadRequest, "JSON de empresa inválido")
+			return
+		}
+		empresasParaSalvar = append(empresasParaSalvar, empresa)
+
+	case []interface{}:
+		jsonBytes, _ := json.Marshal(p)
+		if err := json.Unmarshal(jsonBytes, &empresasParaSalvar); err != nil {
+			RespondWithError(w, http.StatusBadRequest, "JSON de empresas inválido")
+			return
+		}
+
+	default:
+		RespondWithError(w, http.StatusBadRequest, "Formato de JSON inválido. Deve ser um objeto ou um array de objetos.")
 		return
 	}
 
-	if empresa.CNPJ == "" {
-		RespondWithError(w, http.StatusBadRequest, "O CNPJ não pode ser vazio")
+	if len(empresasParaSalvar) == 0 {
+		RespondWithError(w, http.StatusBadRequest, "Nenhuma empresa para cadastrar")
 		return
 	}
+	for _, emp := range empresasParaSalvar {
+		if emp.Nome == "" || emp.CNPJ == "" {
+			RespondWithError(w, http.StatusBadRequest, "O Nome e CNPJ são obrigatórios!")
+			return
+		}
+	}
 
-	//Tudo certo, prepara para salvar
-	empresaSalva, err := database.CadEmpresa(empresa)
+	empresasSalvas, err := database.CreateEmpresasBatch(empresasParaSalvar)
 	if err != nil {
-		log.Printf("Erro ao criar empresa: %v", err)
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresa")
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresa(s): "+err.Error())
 		return
 	}
+
+	log.Printf("%d empresa(s) criada(s) com sucesso.\n", len(empresasSalvas))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(empresaSalva)
-}
 
-// Cadastro de Empresas em Lote
-func CreateEmpresasEmLoteHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+	if len(empresasSalvas) > 1 {
+		json.NewEncoder(w).Encode(empresasSalvas)
 		return
 	}
-
-	var novasEmpresas []models.Empresa
-	err := json.NewDecoder(r.Body).Decode(&novasEmpresas)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido. Esperado um array de empresas.")
-		return
-	}
-
-	empresasSalvas, err := database.CadEmpresasEmLote(novasEmpresas)
-	if err != nil {
-		log.Printf("Erro ao criar empresas em lote: %v", err)
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresas em lote")
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(empresasSalvas)
+	json.NewEncoder(w).Encode(empresasSalvas[0])
 }
 
 // Retorna todas as empresas cadastradas
