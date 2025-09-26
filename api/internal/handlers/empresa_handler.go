@@ -31,7 +31,7 @@ func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
   	  return
 	}
 
-	if empresa.CNPJ == "" { // Exemplo de outra validação
+	if empresa.CNPJ == "" {
 		RespondWithError(w, http.StatusBadRequest, "O CNPJ não pode ser vazio")
   	  return
 	}
