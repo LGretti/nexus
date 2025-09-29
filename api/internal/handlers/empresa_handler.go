@@ -5,18 +5,80 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"nexus/api/internal/database"
 	"nexus/api/internal/models"
 )
 
-// Cadastro de Empresas
-func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+func EmpresasRouterHandler(w http.ResponseWriter, r *http.Request) {
+	// Divide o path em segmentos: ex: ["empresas", "1", "contratos"]
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+
+	// Se tem 1 parte (só "empresas")
+	if len(parts) == 1 {
+		switch r.Method {
+		case http.MethodGet:
+			GetEmpresasHandler(w, r)
+		case http.MethodPost:
+			CreateEmpresaHandler(w, r)
+		default:
+			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /empresas/")
+		}
 		return
 	}
 
+	// Se tem 2 partes (ex: "empresas", "1")
+	if len(parts) == 2 {
+		switch r.Method {
+		case http.MethodGet:
+			GetEmpresasHandler(w, r)
+		case http.MethodPut:
+			UpdateEmpresaHandler(w, r)
+		case http.MethodDelete:
+			DeleteEmpresaHandler(w, r)
+		default:
+			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /empresas/{id}")
+		}
+		return
+	}
+
+	// Se tem 3 partes e a terceira é "contratos" (ex: "empresas", "1", "contratos")
+	if len(parts) == 3 && parts[2] == "contratos" {
+		if r.Method == http.MethodGet {
+			GetContratosByEmpresaIDHandler(w, r) // Nosso novo handler!
+		} else {
+			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /empresas/{id}/contratos")
+		}
+		return
+	}
+
+	// Se não caiu em nenhuma regra, rota não encontrada
+	RespondWithError(w, http.StatusNotFound, "Rota não encontrada")
+}
+
+// Crie o novo handler neste mesmo arquivo
+func GetContratosByEmpresaIDHandler(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	empresaID, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "ID de empresa inválido")
+		return
+	}
+
+	contratos, err := database.GetContratosPorEmpresaID(empresaID)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar contratos da empresa")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(contratos)
+}
+
+// Cadastro de Empresas
+func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	var payload interface{}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
@@ -78,107 +140,100 @@ func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 
 // Retorna todas as empresas cadastradas
 func GetEmpresasHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+	path := strings.TrimPrefix(r.URL.Path, "/empresas/")
+
+	var id *int64
+
+	if path != "" {
+		parseID, err := strconv.ParseInt(path, 10, 64)
+		if err != nil {
+			RespondWithError(w, http.StatusBadRequest, "ID de usuário inválido")
+			return
+		}
+		id = &parseID
+	}
+
+	listaEmpresas, err := database.GetEmpresas(id)
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, "Erro ao obter lista de usuários: "+err.Error())
 		return
 	}
 
-	empresas, err := database.GetEmpresas()
-	if err != nil {
-		RespondWithError(w, http.StatusNotFound, "Erro ao obter lista de empresas: "+err.Error())
+	if id != nil && len(listaEmpresas) == 0 {
+		RespondWithError(w, http.StatusNotFound, "Empresa não encontrada")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(empresas)
-}
 
-// Retorna uma empresa pelo ID
-func GetEmpresaByIDHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
-		return
+	if id != nil {
+		json.NewEncoder(w).Encode(listaEmpresas[0])
+	} else {
+		json.NewEncoder(w).Encode(listaEmpresas)
 	}
-
-	// Extrai o ID da URL. Ex: /empresas/1
-	idStr := r.URL.Path[len("/empresas/"):]
-	if idStr == "" {
-		// Se não houver ID, chama o handler que lista todas as empresas.
-		GetEmpresasHandler(w, r)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID da empresa inválido")
-		return
-	}
-
-	empresa, err := database.GetEmpresaByID(id)
-	if err != nil {
-		RespondWithError(w, http.StatusNotFound, "Erro ao obter empresa: "+err.Error())
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(empresa)
 }
 
 // Atualiza uma empresa
 func UpdateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+	// 1. Extrair o ID da URL
+	path := strings.TrimPrefix(r.URL.Path, "/empresas/")
+	id, err := strconv.ParseInt(path, 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
 
+	// 2. Decodificar o corpo da requisição
 	var empresaAtualizada models.Empresa
-	err := json.NewDecoder(r.Body).Decode(&empresaAtualizada)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&empresaAtualizada); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 
-	idStr := r.URL.Path[len("/empresas/"):]
-
-	id, err := strconv.Atoi(idStr)
+	// 3. Atribuir o ID da URL à struct e chamar o banco
+	empresaAtualizada.ID = int(id)
+	rowsAffected, err := database.UpdateEmpresa(empresaAtualizada)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID da empresa inválido")
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar empresa")
 		return
 	}
 
-	empresa, err := database.UpdateEmpresa(id, empresaAtualizada)
-	if err != nil {
-		RespondWithError(w, http.StatusNotFound, "Erro ao localizar empresa: "+err.Error())
+	// 4. Verificar se a empresa foi encontrada
+	if rowsAffected == 0 {
+		RespondWithError(w, http.StatusNotFound, "Empresa não encontrada")
 		return
 	}
 
+	// 5. Responder com sucesso
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(empresa)
+	json.NewEncoder(w).Encode(empresaAtualizada)
 }
 
 // Deleta uma empresa
 func DeleteEmpresaHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
-		return
-	}
-
-	idStr := r.URL.Path[len("/empresas/"):]
-
-	id, err := strconv.Atoi(idStr)
+	// 1. Extrair o ID da URL
+	path := strings.TrimPrefix(r.URL.Path, "/empresas/")
+	id, err := strconv.ParseInt(path, 10, 64)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID da empresa não localizado")
+		RespondWithError(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
 
-	err = database.DeleteEmpresa(id)
+	// 2. Chamar o banco de dados
+	rowsAffected, err := database.DeleteEmpresa(id)
 	if err != nil {
-		RespondWithError(w, http.StatusNotFound, err.Error())
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar empresa")
 		return
 	}
 
+	// 3. Verificar se a empresa foi encontrada
+	if rowsAffected == 0 {
+		RespondWithError(w, http.StatusNotFound, "Empresa não encontrada")
+		return
+	}
+
+	// 4. Responder com sucesso (sem corpo na resposta)
 	w.WriteHeader(http.StatusNoContent)
 }
