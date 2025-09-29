@@ -8,9 +8,10 @@ import (
 
 	"nexus/api/internal/database"
 	"nexus/api/internal/models"
+	"nexus/api/internal/repository"
 )
 
-func UsuariosRouterHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UsuarioHandler) UsuariosRouterHandler(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/usuarios/")
 
 	// Se o path está vazio, a rota é /usuarios/
@@ -37,6 +38,16 @@ func UsuariosRouterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UsuarioHandler struct {
+	usuarioRepo repository.UsuarioRepository
+}
+
+func NewUsuarioHandler(usuarioRepo repository.UsuarioRepository) *UsuarioHandler {
+	return &UsuarioHandler{
+		usuarioRepo: usuarioRepo,
+	}
+}
+
 func CreateUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	var usuario models.Usuario
 	err := json.NewDecoder(r.Body).Decode(&usuario)
@@ -50,7 +61,7 @@ func CreateUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usuarioSalvo, err := database.CreateUsuario(usuario)
+	usuarioSalvo, err := repository.NewUsuarioRepository(database.DB).Save(usuario)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar usuário")
 		return
@@ -75,7 +86,7 @@ func GetUsuariosHandler(w http.ResponseWriter, r *http.Request) {
 		id = &parseID
 	}
 
-	listaUsuarios, err := database.GetUsuarios(id)
+	listaUsuarios, err := repository.NewUsuarioRepository(database.DB).Get(id)
 	if err != nil {
 		RespondWithError(w, http.StatusNotFound, "erro ao obter lista de usuários: "+err.Error())
 		return
@@ -113,7 +124,7 @@ func UpdateUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Atribuir o ID da URL à struct e chamar o banco
 	usuarioAtualizado.ID = int(id)
-	rowsAffected, err := database.UpdateUsuario(usuarioAtualizado)
+	rowsAffected, err := repository.NewUsuarioRepository(database.DB).Update(usuarioAtualizado)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar usuário")
 		return
@@ -141,7 +152,7 @@ func DeleteUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Chamar o banco de dados
-	rowsAffected, err := database.DeleteUsuario(id)
+	rowsAffected, err := repository.NewUsuarioRepository(database.DB).Delete(id)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar usuário")
 		return

@@ -9,9 +9,22 @@ import (
 
 	"nexus/api/internal/database"
 	"nexus/api/internal/models"
+	"nexus/api/internal/repository"
 )
 
-func EmpresasRouterHandler(w http.ResponseWriter, r *http.Request) {
+type EmpresaHandler struct {
+	empresaRepo  repository.EmpresaRepository
+	contratoRepo repository.ContratoRepository
+}
+
+func NewEmpresaHandler(empresaRepo repository.EmpresaRepository, contratoRepo repository.ContratoRepository) *EmpresaHandler {
+	return &EmpresaHandler{
+		empresaRepo:  empresaRepo,
+		contratoRepo: contratoRepo,
+	}
+}
+
+func (h *EmpresaHandler) EmpresasRouterHandler(w http.ResponseWriter, r *http.Request) {
 	// Divide o path em segmentos: ex: ["empresas", "1", "contratos"]
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 
@@ -46,7 +59,7 @@ func EmpresasRouterHandler(w http.ResponseWriter, r *http.Request) {
 	// Se tem 3 partes e a terceira é "contratos" (ex: "empresas", "1", "contratos")
 	if len(parts) == 3 && parts[2] == "contratos" {
 		if r.Method == http.MethodGet {
-			GetContratosByEmpresaIDHandler(w, r) // Nosso novo handler!
+			h.GetContratosByEmpresaIDHandler(w, r) // Nosso novo handler!
 		} else {
 			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /empresas/{id}/contratos")
 		}
@@ -58,7 +71,7 @@ func EmpresasRouterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Crie o novo handler neste mesmo arquivo
-func GetContratosByEmpresaIDHandler(w http.ResponseWriter, r *http.Request) {
+func (h *EmpresaHandler) GetContratosByEmpresaIDHandler(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	empresaID, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
@@ -66,7 +79,8 @@ func GetContratosByEmpresaIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	contratos, err := database.GetContratosPorEmpresaID(empresaID)
+	contratos, err := h.contratoRepo.GetPorEmpresaID(empresaID)
+
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar contratos da empresa")
 		return
@@ -120,22 +134,18 @@ func CreateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	empresasSalvas, err := database.CreateEmpresasBatch(empresasParaSalvar)
+	empresaSalva, err := repository.NewEmpresaRepository(database.DB).Save(empresasParaSalvar[0])
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresa(s): "+err.Error())
 		return
 	}
 
-	log.Printf("%d empresa(s) criada(s) com sucesso.\n", len(empresasSalvas))
+	log.Printf("1 empresa(s) criada(s) com sucesso.\n")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	if len(empresasSalvas) > 1 {
-		json.NewEncoder(w).Encode(empresasSalvas)
-		return
-	}
-	json.NewEncoder(w).Encode(empresasSalvas[0])
+	json.NewEncoder(w).Encode(empresaSalva)
 }
 
 // Retorna todas as empresas cadastradas
@@ -153,9 +163,9 @@ func GetEmpresasHandler(w http.ResponseWriter, r *http.Request) {
 		id = &parseID
 	}
 
-	listaEmpresas, err := database.GetEmpresas(id)
+	listaEmpresas, err := repository.NewEmpresaRepository(database.DB).Get(id)
 	if err != nil {
-		RespondWithError(w, http.StatusNotFound, "Erro ao obter lista de usuários: "+err.Error())
+		RespondWithError(w, http.StatusNotFound, "Erro ao obter lista de empresas: "+err.Error())
 		return
 	}
 
@@ -193,7 +203,7 @@ func UpdateEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Atribuir o ID da URL à struct e chamar o banco
 	empresaAtualizada.ID = int(id)
-	rowsAffected, err := database.UpdateEmpresa(empresaAtualizada)
+	rowsAffected, err := repository.NewEmpresaRepository(database.DB).Update(empresaAtualizada)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar empresa")
 		return
@@ -222,7 +232,7 @@ func DeleteEmpresaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Chamar o banco de dados
-	rowsAffected, err := database.DeleteEmpresa(id)
+	rowsAffected, err := repository.NewEmpresaRepository(database.DB).Delete(id)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar empresa")
 		return

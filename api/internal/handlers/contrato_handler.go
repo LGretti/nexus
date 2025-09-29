@@ -8,9 +8,10 @@ import (
 
 	"nexus/api/internal/database"
 	"nexus/api/internal/models"
+	"nexus/api/internal/repository"
 )
 
-func ContratosRouterHandler(w http.ResponseWriter, r *http.Request) {
+func (h *ContratoHandler) ContratosRouterHandler(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/contratos/")
 
 	if path == "" { // Rota /contratos/
@@ -35,6 +36,16 @@ func ContratosRouterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ContratoHandler struct {
+	contratoRepo repository.ContratoRepository
+}
+
+func NewContratoHandler(contratoRepo repository.ContratoRepository) *ContratoHandler {
+	return &ContratoHandler{
+		contratoRepo: contratoRepo,
+	}
+}
+
 // CreateContratoHandler lida com a criação de um novo contrato
 func CreateContratoHandler(w http.ResponseWriter, r *http.Request) {
 	var novoContrato models.Contrato
@@ -49,7 +60,7 @@ func CreateContratoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	contratoSalvo, err := database.CreateContrato(novoContrato)
+	contratoSalvo, err := repository.NewContratoRepository(database.DB).Save(novoContrato)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao salvar contrato")
 		return
@@ -71,7 +82,7 @@ func GetContratosHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		id = &parseID
 	}
-	contratos, err := database.GetContratos(id)
+	contratos, err := repository.NewContratoRepository(database.DB).Get(id)
 	if err != nil {
 		RespondWithError(w, http.StatusNotFound, "erro ao obter lista de contratos: "+err.Error())
 		return
@@ -84,6 +95,7 @@ func GetContratosHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(contratos)
 }
+
 func UpdateContratoHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. Extrair o ID da URL
 	path := strings.TrimPrefix(r.URL.Path, "/contratos/")
@@ -100,7 +112,7 @@ func UpdateContratoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// 3. Atribuir o ID da URL à struct e chamar o banco
 	contratoAtualizado.ID = id
-	rowsAffected, err := database.UpdateContrato(contratoAtualizado)
+	rowsAffected, err := repository.NewContratoRepository(database.DB).Update(contratoAtualizado)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar contrato: "+err.Error())
 		return
@@ -122,7 +134,7 @@ func DeleteContratoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Chamar o banco para deletar o contrato
-	rowsAffected, err := database.DeleteContrato(id)
+	rowsAffected, err := repository.NewContratoRepository(database.DB).Delete(id)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar contrato")
 		return
