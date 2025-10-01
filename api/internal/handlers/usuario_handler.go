@@ -3,55 +3,32 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 
-	"nexus/api/internal/database"
 	"nexus/api/internal/models"
 	"nexus/api/internal/repository"
 )
 
-func (h *UsuarioHandler) UsuariosRouterHandler(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/usuarios/")
-
-	// Se o path está vazio, a rota é /usuarios/
-	if path == "" {
-		switch r.Method {
-		case http.MethodGet:
-			GetUsuariosHandler(w, r) // Lista todos os usuários
-		case http.MethodPost:
-			CreateUsuarioHandler(w, r) // Cria usuário(s)
-		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /usuarios/")
-		}
-	} else { // Se o path não está vazio, ele deve ser um ID
-		switch r.Method {
-		case http.MethodGet:
-			GetUsuariosHandler(w, r)
-		case http.MethodPut:
-			UpdateUsuarioHandler(w, r)
-		case http.MethodDelete:
-			DeleteUsuarioHandler(w, r)
-		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /usuarios/{id}")
-		}
-	}
-}
-
+// UsuarioHandler lida com as requisições para usuários.
 type UsuarioHandler struct {
-	usuarioRepo repository.UsuarioRepository
+	*BaseHandler[*models.Usuario]
+	repo repository.UsuarioRepository
 }
 
-func NewUsuarioHandler(usuarioRepo repository.UsuarioRepository) *UsuarioHandler {
-	return &UsuarioHandler{
-		usuarioRepo: usuarioRepo,
+// NewUsuarioHandler cria um novo handler de usuários, sobrescrevendo o CreateHandler.
+func NewUsuarioHandler(repo repository.UsuarioRepository) *UsuarioHandler {
+	baseHandler := NewBaseHandler[*models.Usuario](repo, "usuarios")
+	handler := &UsuarioHandler{
+		BaseHandler: baseHandler,
+		repo:        repo,
 	}
+	handler.CreateHandler = handler.createUsuarioHandler
+	return handler
 }
 
-func CreateUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	var usuario models.Usuario
-	err := json.NewDecoder(r.Body).Decode(&usuario)
-	if err != nil {
+// createUsuarioHandler é a implementação customizada para criar um usuário.
+func (h *UsuarioHandler) createUsuarioHandler(w http.ResponseWriter, r *http.Request) {
+	usuario := h.newModel()
+	if err := json.NewDecoder(r.Body).Decode(&usuario); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
@@ -61,109 +38,26 @@ func CreateUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usuarioSalvo, err := repository.NewUsuarioRepository(database.DB).Save(usuario)
+	exists, err := h.repo.EmailExists(usuario.Email)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao verificar e-mail")
+		return
+	}
+	if exists {
+		RespondWithError(w, http.StatusConflict, "E-mail já cadastrado")
+		return
+	}
+
+	savedUsuario, err := h.repo.Save(usuario)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar usuário")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(usuarioSalvo)
+	RespondWithJSON(w, http.StatusCreated, savedUsuario)
 }
 
-func GetUsuariosHandler(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/usuarios/")
-
-	var id *int64
-
-	if path != "" {
-		parseID, err := strconv.ParseInt(path, 10, 64)
-		if err != nil {
-			RespondWithError(w, http.StatusBadRequest, "ID de usuário inválido")
-			return
-		}
-		id = &parseID
-	}
-
-	listaUsuarios, err := repository.NewUsuarioRepository(database.DB).Get(id)
-	if err != nil {
-		RespondWithError(w, http.StatusNotFound, "erro ao obter lista de usuários: "+err.Error())
-		return
-	}
-
-	if id != nil && len(listaUsuarios) == 0 {
-		RespondWithError(w, http.StatusNotFound, "Empresa não encontrada")
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if id != nil {
-		json.NewEncoder(w).Encode(listaUsuarios[0])
-	} else {
-		json.NewEncoder(w).Encode(listaUsuarios)
-	}
-}
-
-func UpdateUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Extrair o ID da URL
-	path := strings.TrimPrefix(r.URL.Path, "/usuarios/")
-	id, err := strconv.ParseInt(path, 10, 64)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
-		return
-	}
-
-	// 2. Decodificar o corpo da requisição
-	var usuarioAtualizado models.Usuario
-	if err := json.NewDecoder(r.Body).Decode(&usuarioAtualizado); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
-		return
-	}
-
-	// 3. Atribuir o ID da URL à struct e chamar o banco
-	usuarioAtualizado.ID = int(id)
-	rowsAffected, err := repository.NewUsuarioRepository(database.DB).Update(usuarioAtualizado)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar usuário")
-		return
-	}
-
-	// 4. Verificar se o usuário foi encontrado
-	if rowsAffected == 0 {
-		RespondWithError(w, http.StatusNotFound, "Usuário não encontrado")
-		return
-	}
-
-	// 5. Responder com sucesso
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(usuarioAtualizado)
-}
-
-func DeleteUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Extrair o ID da URL
-	path := strings.TrimPrefix(r.URL.Path, "/usuarios/")
-	id, err := strconv.ParseInt(path, 10, 64)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
-		return
-	}
-
-	// 2. Chamar o banco de dados
-	rowsAffected, err := repository.NewUsuarioRepository(database.DB).Delete(id)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar usuário")
-		return
-	}
-
-	// 3. Verificar se o usuário foi encontrado
-	if rowsAffected == 0 {
-		RespondWithError(w, http.StatusNotFound, "Usuário não encontrado")
-		return
-	}
-
-	// 4. Responder com sucesso (sem corpo na resposta)
-	w.WriteHeader(http.StatusNoContent)
+// UsuariosRouterHandler delega para o router do handler base.
+func (h *UsuarioHandler) UsuariosRouterHandler(w http.ResponseWriter, r *http.Request) {
+	h.RouterHandler(w, r)
 }

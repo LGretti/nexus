@@ -9,6 +9,7 @@ func NewRouter(empresaHandler *EmpresaHandler, usuarioHandler *UsuarioHandler, c
 
 	mux.HandleFunc("/", RootHandler)
 	mux.HandleFunc("/empresas/", empresaHandler.EmpresasRouterHandler)
+	mux.HandleFunc("/empresas/{id}/contratos", contratoHandler.ContratosRouterHandler)
 	mux.HandleFunc("/usuarios/", usuarioHandler.UsuariosRouterHandler)
 	mux.HandleFunc("/contratos/", contratoHandler.ContratosRouterHandler)
 

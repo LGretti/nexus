@@ -11,3 +11,11 @@ type Contrato struct {
 	DataFim          time.Time `json:"data_fim"`
 	Ativo            bool      `json:"ativo"`
 }
+
+func (c *Contrato) GetID() int64 {
+	return c.ID
+}
+
+func (c *Contrato) SetID(id int64) {
+	c.ID = id
+}

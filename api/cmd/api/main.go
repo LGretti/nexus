@@ -13,7 +13,7 @@ func main() {
 	// 1. Conecta ao banco de dados
 	database.ConnectDB()
 	db := database.DB
-	if db == nil { // Check if DB is actually connected
+	if db == nil {
 		log.Fatalf("Não foi possível conectar ao banco de dados: DB is nil")
 	}
 
@@ -22,16 +22,16 @@ func main() {
 	empresaRepo := repository.NewEmpresaRepository(db)
 	usuarioRepo := repository.NewUsuarioRepository(db)
 
-	// 3. Cria as instâncias dos Handlers, INJETANDO os repositórios
-	empresaHandler := handlers.NewEmpresaHandler(empresaRepo, contratoRepo)
+	// 3. Cria as instâncias dos Handlers
+	empresaHandler := handlers.NewEmpresaHandler(empresaRepo)
 	usuarioHandler := handlers.NewUsuarioHandler(usuarioRepo)
 	contratoHandler := handlers.NewContratoHandler(contratoRepo)
 
-	// 4. Configura o roteador passando os handlers
+	// 4. Configura o roteador
 	router := handlers.NewRouter(empresaHandler, usuarioHandler, contratoHandler)
 
 	const port = ":8080"
-	log.Printf("🚀 Servidor subindo na porta %s", port)
+	log.Printf("Servidor subindo na porta %s", port)
 	if err := http.ListenAndServe(port, router); err != nil {
 		log.Fatal("Erro ao iniciar o servidor: ", err)
 	}

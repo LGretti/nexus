@@ -4,66 +4,87 @@
 
 API em Go para o sistema Nexus, uma plataforma de service desk para controle de contratos, horas e chamados. Este é o serviço de back-end responsável por toda a lógica de negócio e persistência de dados.
 
-**Versão Inicial (MVP):** Foco no CRUD de Empresas e seus Contratos de horas.
+**Versão Atual:** CRUD completo para Usuários, Empresas e Contratos, com uma arquitetura refatorada usando generics para melhor manutenibilidade.
 
 ## Tecnologias
 
 *   **Linguagem:** Go (Golang)
 *   **Roteador:** `net/http` (biblioteca padrão)
-*   **Banco de Dados:** PostgreSQL (a ser confirmado)
+*   **Banco de Dados:** PostgreSQL
 
 ## Pré-requisitos
 
 *   Go 1.21 ou superior
-*   PostgreSQL (ou o banco de dados de sua escolha)
+*   PostgreSQL
 
 ## Como Executar
 
 1.  Clone o repositório.
-2.  Configure as variáveis de ambiente em um arquivo `.env` (ex: string de conexão com o banco).
+2.  Certifique-se de que o PostgreSQL está em execução e acessível com a string de conexão padrão: `postgres://nexususer:postgres@localhost:5432/nexusdb?sslmode=disable`. O script `table.sql` na raiz pode ser usado para criar as tabelas.
 3.  Navegue até a pasta da API: `cd api`
-4.  Execute o servidor: `go run ./cmd/api`
+4.  Execute o servidor: `go run ./cmd/api/main.go`
 5.  A API estará disponível em `http://localhost:8080`.
 
 ## Endpoints Disponíveis
 
+**Nota:** Todos os endpoints que recebem um corpo de requisição esperam o `Content-Type: application/json`. As rotas com `.../` no final requerem a barra (`/`) para funcionar corretamente.
+
+### Usuários
+
+*   `POST /usuarios/`: Cria um novo usuário.
+*   `GET /usuarios/`: Lista todos os usuários.
+*   `GET /usuarios/{id}`: Busca um usuário específico pelo seu ID.
+*   `PUT /usuarios/{id}`: Atualiza os dados de um usuário existente.
+*   `DELETE /usuarios/{id}`: Deleta um usuário.
+
 ### Empresas
 
-*   `POST /empresas`: Cria uma nova empresa.
-*   `POST /empresas/lote`: Cria múltiplas empresas em uma única requisição.
-*   `GET /empresas`: Lista todas as empresas.
+*   `POST /empresas/`: Cria uma nova empresa (com um único objeto JSON) ou múltiplas empresas (com um array de objetos JSON).
+*   `GET /empresas/`: Lista todas as empresas.
 *   `GET /empresas/{id}`: Busca uma empresa específica pelo seu ID.
 *   `PUT /empresas/{id}`: Atualiza os dados de uma empresa existente.
 *   `DELETE /empresas/{id}`: Deleta uma empresa.
 
 ### Contratos
 
-*   `POST /empresas/{id}/contratos`: Cria um novo contrato para uma empresa.
-*   `GET /empresas/{id}/contratos`: Lista todos os contratos de uma empresa.
+*   `POST /contratos/`: Cria um novo contrato.
+*   `GET /contratos/{id}`: Busca um contrato específico pelo seu ID.
+*   `GET /empresas/{id}/contratos`: Lista todos os contratos de uma empresa específica.
 *   `PUT /contratos/{id}`: Atualiza um contrato existente.
-*   `DELETE /contratos/{id}`: Deleta um contrato.
+*   `DELETE /contratos/{id}`: Desativa um contrato (define `ativo` como `false`, não deleta o registro).
 
 ## Modelos de Dados (Exemplos)
 
-### Empresa
+### Usuario (Request/Response)
 
 ```json
 {
-    "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-    "nome_fantasia": "Empresa Exemplo",
-    "razao_social": "Empresa Exemplo LTDA",
-    "cnpj": "12.345.678/0001-99"
+    "id": 1,
+    "nome": "Jules",
+    "email": "jules@example.com",
+    "perfil": "admin"
 }
 ```
 
-### Contrato
+### Empresa (Request/Response)
 
 ```json
 {
-    "id": "f0e9d8c7-b6a5-4321-fedc-ba9876543210",
-    "empresa_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-    "horas_contratadas": 50,
-    "valor_hora": 150.50,
+    "id": 1,
+    "nome": "Acme Corp",
+    "cnpj": "12.345.678/0001-99",
+    "email_contato": "contact@acme.com"
+}
+```
+
+### Contrato (Request/Response)
+
+```json
+{
+    "id": 1,
+    "empresa_id": 1,
+    "tipo_contrato": "Retainer",
+    "horas_contratadas": 100,
     "data_inicio": "2025-01-01T00:00:00Z",
     "data_fim": "2025-12-31T23:59:59Z",
     "ativo": true
