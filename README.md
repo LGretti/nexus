@@ -1,92 +1,129 @@
-# Nexus Service Desk API
 
-## Sobre o Projeto
+# Nexus Service Desk
 
-API em Go para o sistema Nexus, uma plataforma de service desk para controle de contratos, horas e chamados. Este é o serviço de back-end responsável por toda a lógica de negócio e persistência de dados.
-
-**Versão Atual:** CRUD completo para Usuários, Empresas e Contratos, com uma arquitetura refatorada usando generics para melhor manutenibilidade.
+Sistema completo de Service Desk para gestão de consultoria, controle de contratos e apontamento de horas. O projeto consiste em uma API robusta em Go e um Frontend moderno em Next.js.
 
 ## Tecnologias
 
-*   **Linguagem:** Go (Golang)
-*   **Roteador:** `net/http` (biblioteca padrão)
-*   **Banco de Dados:** PostgreSQL
+### Backend (API)
+*  **Linguagem:** Go (Golang)
+*  **Router:** chi (go-chi)
+*  **Banco de Dados:** PostgreSQL
+*  **Arquitetura:** Camadas (Handlers, Repositories, Models) com injeção de dependência.
 
-## Pré-requisitos
-
-*   Go 1.21 ou superior
-*   PostgreSQL
+### Frontend (Web)
+*  **Framework:** Next.js 14 (App Router)
+*  **Linguagem:** TypeScript
+*  **Estado/Cache:** TanStack Query (React Query)
+*  **Estilização:** Tailwind CSS
+  
 
 ## Como Executar
 
-1.  Clone o repositório.
-2.  Certifique-se de que o PostgreSQL está em execução e acessível com a string de conexão padrão: `postgres://nexususer:postgres@localhost:5432/nexusdb?sslmode=disable`. O script `table.sql` na raiz pode ser usado para criar as tabelas.
-3.  Navegue até a pasta da API: `cd api`
-4.  Execute o servidor: `go run ./cmd/api/main.go`
-5.  A API estará disponível em `http://localhost:8080`.
+### Pré-requisitos
 
-## Endpoints Disponíveis
+* Go 1.21+
+* Node.js 18+
+* PostgreSQL rodando (Database: `nexusdb`)  
 
-**Nota:** Todos os endpoints que recebem um corpo de requisição esperam o `Content-Type: application/json`. As rotas com `.../` no final requerem a barra (`/`) para funcionar corretamente.
+### Modo Automático
+Na raiz do projeto, apenas execute o script:
+``` bash
+./dev.bat
+```
 
-### Usuários
+Isso abrirá duas janelas de terminal: uma para o Backend (porta 8080) e outra para o Frontend (porta 3000).
 
-*   `POST /usuarios/`: Cria um novo usuário.
-*   `GET /usuarios/`: Lista todos os usuários.
-*   `GET /usuarios/{id}`: Busca um usuário específico pelo seu ID.
-*   `PUT /usuarios/{id}`: Atualiza os dados de um usuário existente.
-*   `DELETE /usuarios/{id}`: Deleta um usuário.
+### Modo Manual
+1.  **Backend:**
+``` bash
+cd api
+go run cmd/api/main.go
+```
 
-### Empresas
+2. **Frontend:**
+``` bash
+cd  frontend
+npm  install
+npm  run  dev
+```
 
-*   `POST /empresas/`: Cria uma nova empresa (com um único objeto JSON) ou múltiplas empresas (com um array de objetos JSON).
-*   `GET /empresas/`: Lista todas as empresas.
-*   `GET /empresas/{id}`: Busca uma empresa específica pelo seu ID.
-*   `PUT /empresas/{id}`: Atualiza os dados de uma empresa existente.
-*   `DELETE /empresas/{id}`: Deleta uma empresa.
+Acesse o sistema em: http://localhost:3000
 
-### Contratos
 
-*   `POST /contratos/`: Cria um novo contrato.
-*   `GET /contratos/{id}`: Busca um contrato específico pelo seu ID.
-*   `GET /empresas/{id}/contratos`: Lista todos os contratos de uma empresa específica.
-*   `PUT /contratos/{id}`: Atualiza um contrato existente.
-*   `DELETE /contratos/{id}`: Desativa um contrato (define `ativo` como `false`, não deleta o registro).
+## API Endpoints
 
-## Modelos de Dados (Exemplos)
+A API roda em `http://localhost:8080` e todas as rotas são prefixadas com `/api`.
 
-### Usuario (Request/Response)
+### Empresas (Companies)
+| **Método** | **Rota** | **Descrição** |
+|--|--|--|
+| `GET` | `/api/companies` | Lista todas as empresas |
+| `POST` | `/api/companies` | Cadastra nova empresa |
+| `GET` | `/api/companies/{id}` | Detalhes da empresa |
+| `PUT` | `/api/companies/{id}` | Atualiza empresa |
+| `DELETE` | `/api/companies/{id}` | Remove empresa |
 
-```json
+### Contratos (Contracts)
+| **Método** | **Rota** | **Descrição** |
+|--|--|--|
+| `GET` | `/api/contracts` | Lista contratos (inclui nome da empresa) |
+| `POST` | `/api/contracts` | Cria contrato vinculado a uma empresa |
+| `GET` | `/api/contracts/{id}` | Detalhes do contrato |
+| `GET` | `/api/contracts/{id}/appointments` | **Relatório:** Atendimentos deste contrato |
+
+### Usuários (Users)
+| **Método** | **Rota** | **Descrição** |
+|--|--|--|
+| `GET` | `/api/users` | Lista consultores e admins |
+| `POST` | `/api/users` | Cadastra usuário |
+| `GET` | `/api/users/{id}/appointments` | **Produtividade:** Horas deste consultor |
+
+### Apontamentos (Appointments)
+| **Método** | **Rota** | **Descrição** |
+|--|--|--|
+| `POST` | `/api/appointments` | Lança horas (Start/End Time) |
+| `GET` | `/api/appointments` | Visão Geral (Admin) |
+| `DELETE` | `/api/appointments/{id}` | Remove lançamento |
+
+
+
+## Modelos de Dados (JSON)
+
+A API utiliza `camelCase` para compatibilidade com o Frontend.
+
+**Empresa**
+``` json
 {
     "id": 1,
-    "nome": "Jules",
-    "email": "jules@example.com",
-    "perfil": "admin"
+    "name": "Ademicon",
+    "cnpj": "12.345.678/0001-90",
+    "email": "contato@ademicon.com.br"
 }
 ```
 
-### Empresa (Request/Response)
-
-```json
+**Contrato**
+``` json
 {
-    "id": 1,
-    "nome": "Acme Corp",
-    "cnpj": "12.345.678/0001-99",
-    "email_contato": "contact@acme.com"
+    "id": 10,
+    "companyId": 1,
+    "companyName": "Ademicon",
+    "title": "Ademicon - Suporte",
+    "contractType": "Mensal",
+    "totalHours": 100,
+    "isActive": true
 }
 ```
 
-### Contrato (Request/Response)
 
-```json
+**Atendimento**
+``` json
 {
-    "id": 1,
-    "empresa_id": 1,
-    "tipo_contrato": "Retainer",
-    "horas_contratadas": 100,
-    "data_inicio": "2025-01-01T00:00:00Z",
-    "data_fim": "2025-12-31T23:59:59Z",
-    "ativo": true
+    "contractId": 10,
+    "userId": 5,
+    "startTime": "2025-12-16T08:00:00Z",
+    "endTime": "2025-12-16T12:00:00Z",
+    "description": "Correção de bug crítico",
+    "totalHours": 4.0
 }
 ```

@@ -11,24 +11,29 @@ import (
 
 func main() {
 	// 1. Conecta ao banco de dados
-	database.ConnectDB()
-	db := database.DB
-	if db == nil {
-		log.Fatalf("Não foi possível conectar ao banco de dados: DB is nil")
+	db, err := database.ConnectDB()
+	if err != nil {
+		log.Fatalf("Não foi possível conectar ao banco de dados: %v", err)
 	}
+	defer db.Close() // Fecha conexão se o main for de f
 
-	// 2. Cria as instâncias dos repositórios
-	contratoRepo := repository.NewContratoRepository(db)
-	empresaRepo := repository.NewEmpresaRepository(db)
-	usuarioRepo := repository.NewUsuarioRepository(db)
+	// 2. Auto-Migration
+	database.RunMigrations(db)
 
-	// 3. Cria as instâncias dos Handlers
-	empresaHandler := handlers.NewEmpresaHandler(empresaRepo)
-	usuarioHandler := handlers.NewUsuarioHandler(usuarioRepo)
-	contratoHandler := handlers.NewContratoHandler(contratoRepo)
+	// 3. Repositórios
+	contractRepo := repository.NewContractRepository(db)
+	companyRepo := repository.NewCompanyRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	appointmentRepo := repository.NewAppointmentRepository(db)
 
-	// 4. Configura o roteador
-	router := handlers.NewRouter(empresaHandler, usuarioHandler, contratoHandler)
+	// 4. Handlers
+	companyHandler := handlers.NewCompanyHandler(companyRepo)
+	userHandler := handlers.NewUserHandler(userRepo)
+	contractHandler := handlers.NewContractHandler(contractRepo)
+	appointmentHandler := handlers.NewAppointmentHandler(appointmentRepo)
+
+	// 5. Roteador
+	router := handlers.NewRouter(companyHandler, userHandler, contractHandler, appointmentHandler)
 
 	const port = ":8080"
 	log.Printf("Servidor subindo na porta %s", port)

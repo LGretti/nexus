@@ -50,10 +50,10 @@ func (r *postgresRepository[T]) Save(model T) (T, error) {
 		if field.Name == "ID" {
 			continue
 		}
-		// Usamos o nome da tag JSON como nome da coluna
-		jsonTag := strings.Split(field.Tag.Get("json"), ",")[0]
-		if jsonTag != "" {
-			cols = append(cols, jsonTag)
+		// Usamos o nome da tag db como nome da coluna
+		dbTag := strings.Split(field.Tag.Get("db"), ",")[0]
+		if dbTag != "" {
+			cols = append(cols, dbTag)
 			values = append(values, val.Field(i).Interface())
 		}
 	}
@@ -86,9 +86,9 @@ func (r *postgresRepository[T]) Get(id *int64) ([]T, error) {
 
 	var cols []string
 	for i := 0; i < typ.NumField(); i++ {
-		jsonTag := strings.Split(typ.Field(i).Tag.Get("json"), ",")[0]
-		if jsonTag != "" {
-			cols = append(cols, jsonTag)
+		dbTag := strings.Split(typ.Field(i).Tag.Get("db"), ",")[0]
+		if dbTag != "" {
+			cols = append(cols, dbTag)
 		}
 	}
 	colNames := strings.Join(cols, ", ")
@@ -143,9 +143,9 @@ func (r *postgresRepository[T]) Update(model T) (int64, error) {
 		if field.Name == "ID" {
 			continue
 		}
-		jsonTag := strings.Split(field.Tag.Get("json"), ",")[0]
-		if jsonTag != "" {
-			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", jsonTag, argCount))
+		dbTag := strings.Split(field.Tag.Get("db"), ",")[0]
+		if dbTag != "" {
+			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", dbTag, argCount))
 			values = append(values, val.Field(i).Interface())
 			argCount++
 		}

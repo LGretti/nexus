@@ -11,3 +11,49 @@ nexus-api
 
 # Arquivos do VSCode
 .vscode/
+
+# Go
+backend/bin/
+backend/tmp/
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Node.js / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage/
+frontend/.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
+*.log
