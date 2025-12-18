@@ -1,3 +1,13 @@
+// @title           Nexus Tracker API
+// @version         1.0
+// @description     API para controle de apontamento de horas do Nexus.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name    Lucas Gretti
+// @contact.email   lucassgretti@gmail.com
+
+// @host            localhost:8080
+// @BasePath        /
 package main
 
 import (

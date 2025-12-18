@@ -1,0 +1,140 @@
+﻿<Window x:Class="NexusTray.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:tb="http://www.hardcodet.net/taskbar" 
+        Title="Nexus Tracker" Height="410" Width="400"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="False" Topmost="True"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Grid>
+        <tb:TaskbarIcon x:Name="MyNotifyIcon" 
+                        ToolTipText="Nexus Tracker (Alt+N)"
+                        IconSource="/nexus_icon.ico"
+                        TrayLeftMouseUp="MyNotifyIcon_TrayLeftMouseUp">
+
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Registrar Horas" Click="MenuRegistrar_Click">
+                        <MenuItem.Icon>
+                            <materialDesign:PackIcon Kind="ClockOutline" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+
+                    <MenuItem Header="Parar Atividade Atual" Click="BtnStop_Click">
+                        <MenuItem.Icon>
+                            <materialDesign:PackIcon Kind="StopCircleOutline" Foreground="Red"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+
+                    <Separator />
+
+                    <MenuItem Header="Sair do Nexus" Click="MenuSair_Click">
+                        <MenuItem.Icon>
+                            <materialDesign:PackIcon Kind="ExitToApp" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+
+        <materialDesign:Card UniformCornerRadius="10" 
+                             Padding="20" 
+                             Margin="10" 
+                             materialDesign:ElevationAssist.Elevation="Dp6" Width="380" Background="#FF282828">
+            <StackPanel VerticalAlignment="Center">
+
+                <TextBlock Text="Nexus Tracker" Style="{StaticResource MaterialDesignHeadline5TextBlock}" 
+                           HorizontalAlignment="Center" Margin="0,0,0,20" FontWeight="Bold" Foreground="#FFF0F0F0" />
+
+                <Border Background="#F0F0F0" CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Fechando Atividade Anterior:" FontSize="10" Foreground="Gray"/>
+                        <TextBlock x:Name="lblLastTask" Text="Nenhuma atividade rodando" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
+
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Início" FontSize="9" Foreground="Gray"/>
+                                <TextBlock x:Name="lblStartTime" Text="--:--" FontWeight="Bold" Foreground="Gray"/>
+                            </StackPanel>
+
+                            <materialDesign:PackIcon Kind="ArrowRight" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" Margin="10,0"/>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Fim" FontSize="9" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                <TextBox x:Name="txtEndTime" 
+                                         Text="--:--" 
+                                         FontWeight="Bold" 
+                                         FontSize="14"
+                                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                         BorderThickness="0"
+                                         materialDesign:TextFieldAssist.DecorationVisibility="Hidden"
+                                         GotFocus="TxtEndTime_GotFocus" 
+                                         MouseDoubleClick="TxtEndTime_MouseDoubleClick"
+                                         ToolTip="Duplo clique para editar a hora de fim manualmente"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <ComboBox x:Name="cmbContracts" 
+                          materialDesign:HintAssist.Hint="Selecione o Contrato"
+                          IsEditable="True"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          Margin="0,0,0,15" 
+                          DisplayMemberPath="DisplayName" 
+                          SelectedValuePath="Id"
+                          SelectionChanged="CmbContracts_SelectionChanged"/>
+
+                <ComboBox x:Name="txtDescription"
+                          IsEditable="True"
+                          StaysOpenOnEdit="True"
+                          materialDesign:HintAssist.Hint="Qual a atividade?"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          Height="50"
+                          Margin="0,0,0,15"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="BtnStop" 
+                            Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                            Background="#D32F2F" 
+                            BorderBrush="#D32F2F"
+                            ToolTip="Parar e Salvar (Sem iniciar nova)"
+                            Click="BtnStop_Click"
+                            Grid.Column="0">
+                        <materialDesign:PackIcon Kind="Stop" Width="24" Height="24" Foreground="White"/>
+                    </Button>
+
+                    <Button Content="CANCELAR" 
+                            Style="{StaticResource MaterialDesignFlatButton}" 
+                            Foreground="Gray"
+                            ToolTip="Fechar janela sem fazer nada"
+                            Click="BtnCancel_Click" 
+                            Grid.Column="2"/>
+
+                    <Button Content="INICIAR" 
+                            Style="{StaticResource MaterialDesignRaisedButton}" 
+                            materialDesign:ButtonAssist.CornerRadius="5"
+                            ToolTip="Salvar anterior e começar esta"
+                            Click="BtnSave_Click" 
+                            Grid.Column="4"/>
+                </Grid>
+            </StackPanel>
+        </materialDesign:Card>
+    </Grid>
+</Window>

@@ -1,0 +1,111 @@
+basePath: /
+definitions:
+  models.Contract:
+    properties:
+      companyId:
+        type: integer
+      companyName:
+        type: string
+      contractType:
+        type: string
+      endDate:
+        type: string
+      id:
+        type: integer
+      isActive:
+        type: boolean
+      startDate:
+        type: string
+      title:
+        type: string
+      totalHours:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: lucassgretti@gmail.com
+    name: Lucas Gretti
+  description: API para controle de apontamento de horas do Nexus.
+  termsOfService: http://swagger.io/terms/
+  title: Nexus Tracker API
+  version: "1.0"
+paths:
+  /api/contracts:
+    get:
+      consumes:
+      - application/json
+      description: Retorna a lista completa de contratos com dados da empresa (JOIN)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Contract'
+            type: array
+      summary: Lista todos os contratos
+      tags:
+      - contracts
+    post:
+      consumes:
+      - application/json
+      description: Valida as datas e insere um novo contrato no banco
+      parameters:
+      - description: Objeto Contrato
+        in: body
+        name: contract
+        required: true
+        schema:
+          $ref: '#/definitions/models.Contract'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Contract'
+        "400":
+          description: Erro de validação
+          schema:
+            type: string
+      summary: Cria um novo contrato
+      tags:
+      - contracts
+  /api/contracts/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Atualiza os dados de um contrato pelo ID
+      parameters:
+      - description: ID do Contrato
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objeto Contrato Atualizado
+        in: body
+        name: contract
+        required: true
+        schema:
+          $ref: '#/definitions/models.Contract'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Contract'
+        "400":
+          description: ID inválido ou datas incorretas
+          schema:
+            type: string
+        "404":
+          description: Contrato não encontrado
+          schema:
+            type: string
+      summary: Atualiza um contrato existente
+      tags:
+      - contracts
+swagger: "2.0"

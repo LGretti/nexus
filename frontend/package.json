@@ -1,27 +1,23 @@
 {
-  "name": "nexus-frontend",
-  "version": "0.1.0",
+  "name": "nexus-dashboard",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev -p 5000 -H 0.0.0.0",
-    "build": "next build",
-    "start": "next start -p 5000 -H 0.0.0.0",
-    "lint": "next lint"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "next": "^14.2.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "date-fns": "^3.6.0",
-    "@tanstack/react-query": "^5.51.0"
+    "react": "^19.2.3",
+    "react-router-dom": "^7.10.1",
+    "react-dom": "^19.2.3",
+    "lucide-react": "^0.561.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.5.0"
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }

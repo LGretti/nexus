@@ -12,11 +12,14 @@ nexus-api
 # Arquivos do VSCode
 .vscode/
 
+# Descartados
+old/
+
 # Go
 backend/bin/
 backend/tmp/
-*.so
-*.dylib
+
+
 *.test
 *.out
 go.work
@@ -40,14 +43,14 @@ next-env.d.ts
 .env.production.local
 
 # IDE
-.vscode/
+
 .idea/
 *.swp
 *.swo
 *~
 
 # OS
-.DS_Store
+
 Thumbs.db
 
 # Debug
@@ -57,3 +60,13 @@ yarn-error.log*
 
 # Misc
 *.log
+# C# / .NET (nexusTray)
+bin/
+obj/
+*.csproj.user
+*.slnx.backup
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates

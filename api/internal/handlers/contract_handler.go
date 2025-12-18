@@ -41,6 +41,16 @@ func (h *ContractHandler) ContractsRouterHandler(w http.ResponseWriter, r *http.
 	h.RouterHandler(w, r)
 }
 
+// createContractHandler godoc
+// @Summary      Cria um novo contrato
+// @Description  Valida as datas e insere um novo contrato no banco
+// @Tags         contracts
+// @Accept       json
+// @Produce      json
+// @Param        contract body models.Contract true "Objeto Contrato"
+// @Success      201  {object}  models.Contract
+// @Failure      400  {string}  string "Erro de validação"
+// @Router       /api/contracts [post]
 // createContractHandler sobrescreve o método base para adicionar validação de data.
 func (h *ContractHandler) createContractHandler(w http.ResponseWriter, r *http.Request) {
 	contract := h.newModel()
@@ -62,6 +72,18 @@ func (h *ContractHandler) createContractHandler(w http.ResponseWriter, r *http.R
 	RespondWithJSON(w, http.StatusCreated, savedContract)
 }
 
+// updateContractHandler godoc
+// @Summary      Atualiza um contrato existente
+// @Description  Atualiza os dados de um contrato pelo ID
+// @Tags         contracts
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int             true "ID do Contrato"
+// @Param        contract body models.Contract true "Objeto Contrato Atualizado"
+// @Success      200  {object}  models.Contract
+// @Failure      400  {string}  string "ID inválido ou datas incorretas"
+// @Failure      404  {string}  string "Contrato não encontrado"
+// @Router       /api/contracts/{id} [put]
 // updateContractHandler sobrescreve o método base para adicionar validação de data.
 func (h *ContractHandler) updateContractHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r)
@@ -119,6 +141,14 @@ func (h *ContractHandler) GetContractsByCompanyHandler(w http.ResponseWriter, r 
 	RespondWithJSON(w, http.StatusOK, contracts)
 }
 
+// ListContracts godoc
+// @Summary      Lista todos os contratos
+// @Description  Retorna a lista completa de contratos com dados da empresa (JOIN)
+// @Tags         contracts
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}  models.Contract
+// @Router       /api/contracts [get]
 func (h *ContractHandler) ListContracts(w http.ResponseWriter, r *http.Request) {
 	contracts, err := h.repo.GetAllWithCompany()
 	if err != nil {

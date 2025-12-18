@@ -3,6 +3,10 @@ package handlers
 import (
 	"net/http"
 
+	_ "nexus/api/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -28,6 +32,10 @@ func NewRouter(
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Nexus API is running 🚀"))
 	})
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), // Aponta para o JSON gerado
+	))
 
 	// --- 1. ROTAS DE EMPRESAS (COMPANIES) ---
 	r.Route("/api/companies", func(r chi.Router) {
