@@ -18,7 +18,7 @@ type ContractHandler struct {
 
 // NewContractHandler cria um novo handler de contratos, sobrescrevendo os handlers.
 func NewContractHandler(repo repository.ContractRepository) *ContractHandler {
-	baseHandler := NewBaseHandler[*models.Contract](repo, "contracts")
+	baseHandler := NewBaseHandler(repo, "contracts")
 	handler := &ContractHandler{
 		BaseHandler: baseHandler,
 		repo:        repo,

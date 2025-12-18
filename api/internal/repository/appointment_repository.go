@@ -76,19 +76,34 @@ func (r *postgresAppointmentRepository) GetByContractID(contractID int64) ([]*mo
 }
 
 func (r *postgresAppointmentRepository) GetByUserID(userID int64) ([]*models.Appointment, error) {
-	query := `SELECT a.id, a.start_time, a.end_time, a.description,
-	                 EXTRACT(EPOCH FROM (a.end_time - a.start_time)) / 3600 as total_hours,
-                     c.title, u.name
-              FROM appointments a
-              JOIN contracts c ON a.contract_id = c.id
-              JOIN users u ON a.user_id = u.id
-              WHERE a.user_id = $1
-              ORDER BY a.created_at DESC`
+	query := `
+		SELECT id, contract_id, user_id, description, start_time, end_time, created_at
+		FROM appointments
+		WHERE user_id = $1
+		ORDER BY start_time DESC`
 
-	rows, err := r.db.QueryContext(context.Background(), query, userID)
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return scanAppointments(rows)
+	var appointments []*models.Appointment
+
+	for rows.Next() {
+		var appt models.Appointment
+		// Lembre-se: appt.EndTime é um ponteiro (*time.Time) para aceitar NULL do banco
+		if err := rows.Scan(
+			&appt.ID,
+			&appt.ContractID,
+			&appt.UserID,
+			&appt.Description,
+			&appt.StartTime,
+			&appt.EndTime,
+			&appt.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		appointments = append(appointments, &appt)
+	}
+	return appointments, nil
 }

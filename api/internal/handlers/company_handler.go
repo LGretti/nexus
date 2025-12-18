@@ -17,7 +17,7 @@ type CompanyHandler struct {
 
 // NewCompanyHandler cria um novo handler de companies, sobrescrevendo o CreateHandler.
 func NewCompanyHandler(repo repository.CompanyRepository) *CompanyHandler {
-	baseHandler := NewBaseHandler[*models.Company](repo, "companies")
+	baseHandler := NewBaseHandler(repo, "companies")
 	handler := &CompanyHandler{
 		BaseHandler: baseHandler,
 		repo:        repo,

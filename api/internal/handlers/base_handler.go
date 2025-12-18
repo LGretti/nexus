@@ -85,7 +85,7 @@ func (h *BaseHandler[T]) createHandlerDefault(w http.ResponseWriter, r *http.Req
 	RespondWithJSON(w, http.StatusCreated, savedModel)
 }
 
-func (h *BaseHandler[T]) getAllHandlerDefault(w http.ResponseWriter, r *http.Request) {
+func (h *BaseHandler[T]) getAllHandlerDefault(w http.ResponseWriter, _ *http.Request) {
 	models, err := h.repo.Get(nil)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao obter "+h.routeName+": "+err.Error())

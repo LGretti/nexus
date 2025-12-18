@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS appointments;
+DROP TABLE IF EXISTS contracts;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS companies;

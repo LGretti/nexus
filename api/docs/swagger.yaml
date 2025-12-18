@@ -1,5 +1,31 @@
 basePath: /
 definitions:
+  models.Appointment:
+    properties:
+      contractId:
+        type: integer
+      contractTitle:
+        description: Calculadas
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      endTime:
+        type: string
+      id:
+        type: integer
+      startTime:
+        type: string
+      totalHours:
+        description: Calculado (Fim - Início)
+        type: number
+      userId:
+        type: integer
+      userName:
+        description: Para mostrar "Lucas"
+        type: string
+    type: object
   models.Contract:
     properties:
       companyId:
@@ -31,6 +57,33 @@ info:
   title: Nexus Tracker API
   version: "1.0"
 paths:
+  /api/appointments:
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo registro. Se 'end_time' for omitido ou null, a tarefa
+        inicia "Em Andamento".
+      parameters:
+      - description: Dados do Apontamento (EndTime opcional)
+        in: body
+        name: appointment
+        required: true
+        schema:
+          $ref: '#/definitions/models.Appointment'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Appointment'
+        "400":
+          description: Erro de validação
+          schema:
+            type: string
+      summary: Inicia ou Registra um apontamento
+      tags:
+      - appointments
   /api/contracts:
     get:
       consumes:
@@ -73,6 +126,29 @@ paths:
       summary: Cria um novo contrato
       tags:
       - contracts
+  /api/contracts/{contractID}/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Retorna todos os apontamentos vinculados a um ID de contrato específico
+      parameters:
+      - description: ID do Contrato
+        in: path
+        name: contractID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Appointment'
+            type: array
+      summary: Lista apontamentos de um contrato
+      tags:
+      - contracts
   /api/contracts/{id}:
     put:
       consumes:
@@ -108,4 +184,31 @@ paths:
       summary: Atualiza um contrato existente
       tags:
       - contracts
+  /api/users/{userID}/appointments:
+    get:
+      consumes:
+      - application/json
+      description: Retorna o histórico de horas de um consultor específico
+      parameters:
+      - description: ID do Usuário
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Appointment'
+            type: array
+        "400":
+          description: ID inválido
+          schema:
+            type: string
+      summary: Lista apontamentos de um usuário
+      tags:
+      - users
 swagger: "2.0"

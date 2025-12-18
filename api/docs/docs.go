@@ -19,6 +19,46 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/appointments": {
+            "post": {
+                "description": "Cria um novo registro. Se 'end_time' for omitido ou null, a tarefa inicia \"Em Andamento\".",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Inicia ou Registra um apontamento",
+                "parameters": [
+                    {
+                        "description": "Dados do Apontamento (EndTime opcional)",
+                        "name": "appointment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Appointment"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Appointment"
+                        }
+                    },
+                    "400": {
+                        "description": "Erro de validação",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/contracts": {
             "get": {
                 "description": "Retorna a lista completa de contratos com dados da empresa (JOIN)",
@@ -83,6 +123,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/contracts/{contractID}/appointments": {
+            "get": {
+                "description": "Retorna todos os apontamentos vinculados a um ID de contrato específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contracts"
+                ],
+                "summary": "Lista apontamentos de um contrato",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do Contrato",
+                        "name": "contractID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Appointment"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/contracts/{id}": {
             "put": {
                 "description": "Atualiza os dados de um contrato pelo ID",
@@ -135,9 +210,88 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/users/{userID}/appointments": {
+            "get": {
+                "description": "Retorna o histórico de horas de um consultor específico",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Lista apontamentos de um usuário",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do Usuário",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Appointment"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "models.Appointment": {
+            "type": "object",
+            "properties": {
+                "contractId": {
+                    "type": "integer"
+                },
+                "contractTitle": {
+                    "description": "Calculadas",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "endTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "startTime": {
+                    "type": "string"
+                },
+                "totalHours": {
+                    "description": "Calculado (Fim - Início)",
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "integer"
+                },
+                "userName": {
+                    "description": "Para mostrar \"Lucas\"",
+                    "type": "string"
+                }
+            }
+        },
         "models.Contract": {
             "type": "object",
             "properties": {
@@ -183,6 +337,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "API para controle de apontamento de horas do Nexus.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

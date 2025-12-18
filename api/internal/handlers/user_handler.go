@@ -16,7 +16,7 @@ type UserHandler struct {
 
 // NewUserHandler cria um novo handler de usuários, sobrescrevendo o CreateHandler.
 func NewUserHandler(repo repository.UserRepository) *UserHandler {
-	baseHandler := NewBaseHandler[*models.User](repo, "users")
+	baseHandler := NewBaseHandler(repo, "users")
 	handler := &UserHandler{
 		BaseHandler: baseHandler,
 		repo:        repo,

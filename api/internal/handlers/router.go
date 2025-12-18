@@ -55,7 +55,7 @@ func NewRouter(
 		r.Delete("/{id}", userHandler.DeleteHandler)
 
 		// Rota Especial: Ver apontamentos deste usuário
-		r.Get("/{userID}/appointments", appointmentHandler.ListByUser)
+		r.Get("/{userID}/appointments", appointmentHandler.ListAppointmentsByUser)
 	})
 
 	// --- 3. ROTAS DE CONTRATOS (CONTRACTS) ---
@@ -67,7 +67,7 @@ func NewRouter(
 		r.Delete("/{id}", contractHandler.DeleteHandler)
 
 		// Rota Especial: Ver apontamentos deste contrato
-		r.Get("/{contractID}/appointments", appointmentHandler.ListByContract)
+		r.Get("/{contractID}/appointments", appointmentHandler.ListAppointmentsByContract)
 	})
 
 	// --- 4. ROTAS DE APONTAMENTOS (APPOINTMENTS) ---
