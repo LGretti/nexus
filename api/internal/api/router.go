@@ -1,9 +1,11 @@
-package handlers
+package api
 
 import (
 	"net/http"
 
-	_ "nexus/api/docs"
+	_ "nexus/docs"
+
+	"nexus/internal/handlers"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -13,10 +15,10 @@ import (
 )
 
 func NewRouter(
-	companyHandler *CompanyHandler,
-	userHandler *UserHandler,
-	contractHandler *ContractHandler,
-	appointmentHandler *AppointmentHandler, // Adicionado o novo handler
+	companyHandler *handlers.CompanyHandler,
+	userHandler *handlers.UserHandler,
+	contractHandler *handlers.ContractHandler,
+	appointmentHandler *handlers.AppointmentHandler, // Adicionado o novo handler
 ) http.Handler {
 
 	r := chi.NewRouter()
@@ -44,6 +46,8 @@ func NewRouter(
 		r.Get("/{id}", companyHandler.GetByIDHandler)   // Detalhe da empresa
 		r.Put("/{id}", companyHandler.UpdateHandler)    // Atualizar
 		r.Delete("/{id}", companyHandler.DeleteHandler) // Deletar
+
+		r.Get("/{companyID}/contracts", contractHandler.ListContractsByCompany)
 	})
 
 	// --- 2. ROTAS DE USUÁRIOS (USERS) ---

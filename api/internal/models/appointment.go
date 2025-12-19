@@ -12,10 +12,11 @@ type Appointment struct {
 	Description string     `json:"description" db:"description"`
 
 	// Calculadas
-	ContractTitle string    `json:"contractTitle,omitempty"` // Para mostrar "Ademicon" no grid
-	UserName      string    `json:"userName,omitempty"`      // Para mostrar "Lucas"
-	TotalHours    float64   `json:"totalHours"`              // Calculado (Fim - Início)
-	CreatedAt     time.Time `json:"createdAt" db:"created_at"`
+	ContractTitle   string    `json:"contractTitle,omitempty"` // Para mostrar "Ademicon" no grid
+	UserName        string    `json:"userName,omitempty"`      // Para mostrar "Lucas"
+	TotalHours      float64   `json:"totalHours"`              // Calculado (Fim - Início)
+	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
+	DurationSeconds int64     `json:"durationSeconds"`
 }
 
 func (a *Appointment) GetID() int64 {

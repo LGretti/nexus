@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	"nexus/api/internal/models"
+	"nexus/internal/models"
 )
 
 // Repository é uma interface para operações de banco de dados genéricas.

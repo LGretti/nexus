@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"nexus/api/internal/models"
+	"nexus/internal/models"
 )
 
 type AppointmentRepository interface {
@@ -30,7 +30,7 @@ func scanAppointments(rows *sql.Rows) ([]*models.Appointment, error) {
 	for rows.Next() {
 		var a models.Appointment
 		if err := rows.Scan(
-			&a.ID, &a.StartTime, &a.EndTime, &a.Description, &a.TotalHours,
+			&a.ID, &a.StartTime, &a.EndTime, &a.Description, &a.TotalHours, &a.DurationSeconds,
 			&a.ContractTitle, &a.UserName,
 		); err != nil {
 			return nil, err
@@ -42,7 +42,8 @@ func scanAppointments(rows *sql.Rows) ([]*models.Appointment, error) {
 
 func (r *postgresAppointmentRepository) GetAllWithContract() ([]*models.Appointment, error) {
 	query := `SELECT a.id, a.start_time, a.end_time, a.description, -- Adicionei description
-	                 EXTRACT(EPOCH FROM (a.end_time - a.start_time)) / 3600 as total_hours,
+	                 EXTRACT(EPOCH FROM (COALESCE(a.end_time, CURRENT_TIMESTAMP) - a.start_time)) / 3600 as total_hours,
+									 EXTRACT(EPOCH FROM (COALESCE(a.end_time, CURRENT_TIMESTAMP) - a.start_time))::bigint as duration_seconds,
                      c.title, u.name
               FROM appointments a
               JOIN contracts c ON a.contract_id = c.id
@@ -59,7 +60,8 @@ func (r *postgresAppointmentRepository) GetAllWithContract() ([]*models.Appointm
 
 func (r *postgresAppointmentRepository) GetByContractID(contractID int64) ([]*models.Appointment, error) {
 	query := `SELECT a.id, a.start_time, a.end_time, a.description,
-	                 EXTRACT(EPOCH FROM (a.end_time - a.start_time)) / 3600 as total_hours,
+	                 EXTRACT(EPOCH FROM (COALESCE(a.end_time, CURRENT_TIMESTAMP) - a.start_time)) / 3600 as total_hours,
+									 EXTRACT(EPOCH FROM (COALESCE(a.end_time, CURRENT_TIMESTAMP) - a.start_time))::bigint as duration_seconds,
                      c.title, u.name
               FROM appointments a
               JOIN contracts c ON a.contract_id = c.id

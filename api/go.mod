@@ -1,4 +1,4 @@
-module nexus/api
+module nexus
 
 go 1.25.1
 

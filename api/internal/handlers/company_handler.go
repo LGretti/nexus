@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"nexus/api/internal/models"
-	"nexus/api/internal/repository"
+	"nexus/internal/models"
+	"nexus/internal/repository"
+	"nexus/internal/utils"
 )
 
 // CompanyHandler lida com as requisições para Companies.
@@ -23,15 +24,17 @@ func NewCompanyHandler(repo repository.CompanyRepository) *CompanyHandler {
 		repo:        repo,
 	}
 	// Sobrescreve o handler de criação padrão pelo customizado
-	handler.CreateHandler = handler.createCompanyHandler
+	handler.CreateHandler = handler.CreateCompanyHandler
 	return handler
 }
 
-// createCompanyHandler lida com a criação de uma ou mais companies.
-func (h *CompanyHandler) createCompanyHandler(w http.ResponseWriter, r *http.Request) {
+// MÉTODOS BASE CUSTOMIZADOS - Apontar para o Handler
+
+// CreateCompanyHandler lida com a criação de uma ou mais companies.
+func (h *CompanyHandler) CreateCompanyHandler(w http.ResponseWriter, r *http.Request) {
 	var payload interface{}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 
@@ -40,25 +43,25 @@ func (h *CompanyHandler) createCompanyHandler(w http.ResponseWriter, r *http.Req
 	if _, ok := payload.([]interface{}); ok {
 		jsonBytes, _ := json.Marshal(payload)
 		if err := json.Unmarshal(jsonBytes, &companiesToSave); err != nil {
-			RespondWithError(w, http.StatusBadRequest, "JSON de array de companies inválido")
+			utils.RespondWithError(w, http.StatusBadRequest, "JSON de array de companies inválido")
 			return
 		}
 	} else if _, ok := payload.(map[string]interface{}); ok {
 		var company *models.Company
 		jsonBytes, _ := json.Marshal(payload)
 		if err := json.Unmarshal(jsonBytes, &company); err != nil {
-			RespondWithError(w, http.StatusBadRequest, "JSON de company inválido")
+			utils.RespondWithError(w, http.StatusBadRequest, "JSON de company inválido")
 			return
 		}
 		companiesToSave = append(companiesToSave, company)
 	} else {
-		RespondWithError(w, http.StatusBadRequest, "Formato de JSON inválido. Deve ser um objeto ou um array de objetos.")
+		utils.RespondWithError(w, http.StatusBadRequest, "Formato de JSON inválido. Deve ser um objeto ou um array de objetos.")
 		return
 	}
 
 	for _, company := range companiesToSave {
 		if company.Name == "" || company.CNPJ == "" {
-			RespondWithError(w, http.StatusBadRequest, "Nome e CNPJ são obrigatórios para todas as empresas")
+			utils.RespondWithError(w, http.StatusBadRequest, "Nome e CNPJ são obrigatórios para todas as empresas")
 			return
 		}
 	}
@@ -67,27 +70,22 @@ func (h *CompanyHandler) createCompanyHandler(w http.ResponseWriter, r *http.Req
 		savedCompany, err := h.repo.Save(companiesToSave[0])
 		if err != nil {
 			if strings.Contains(err.Error(), "companies_cnpj_key") {
-				RespondWithError(w, http.StatusConflict, "Este CNPJ já está cadastrado no sistema.")
+				utils.RespondWithError(w, http.StatusConflict, "Este CNPJ já está cadastrado no sistema.")
 				return
 			}
 
-			RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresa: "+err.Error())
+			utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresa: "+err.Error())
 			return
 		}
-		RespondWithJSON(w, http.StatusCreated, savedCompany)
+		utils.RespondWithJSON(w, http.StatusCreated, savedCompany)
 	} else if len(companiesToSave) > 1 {
 		savedCompanies, err := h.repo.SaveBatch(companiesToSave)
 		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresas em lote: "+err.Error())
+			utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao criar empresas em lote: "+err.Error())
 			return
 		}
-		RespondWithJSON(w, http.StatusCreated, savedCompanies)
+		utils.RespondWithJSON(w, http.StatusCreated, savedCompanies)
 	} else {
-		RespondWithError(w, http.StatusBadRequest, "Nenhuma empresa para cadastrar")
+		utils.RespondWithError(w, http.StatusBadRequest, "Nenhuma empresa para cadastrar")
 	}
-}
-
-// CompaniesRouterHandler delega para o router do handler base.
-func (h *CompanyHandler) CompaniesRouterHandler(w http.ResponseWriter, r *http.Request) {
-	h.RouterHandler(w, r)
 }

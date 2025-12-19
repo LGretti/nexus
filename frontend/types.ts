@@ -34,6 +34,7 @@ export interface Appointment {
   endTime: string;
   description: string;
   totalHours?: number; // Read-only from API
+  durationSeconds?: number;
 }
 
 export interface ApiError {

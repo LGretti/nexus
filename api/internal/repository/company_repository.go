@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"nexus/api/internal/models"
+	"nexus/internal/models"
 )
 
 // CompanyRepository define a interface para as operações com empresas.

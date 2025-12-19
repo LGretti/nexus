@@ -14,9 +14,10 @@ import (
 	"log"
 	"net/http"
 
-	"nexus/api/internal/database"
-	"nexus/api/internal/handlers"
-	"nexus/api/internal/repository"
+	"nexus/internal/api"
+	"nexus/internal/database"
+	"nexus/internal/handlers"
+	"nexus/internal/repository"
 )
 
 func main() {
@@ -43,7 +44,7 @@ func main() {
 	appointmentHandler := handlers.NewAppointmentHandler(appointmentRepo)
 
 	// 5. Roteador
-	router := handlers.NewRouter(companyHandler, userHandler, contractHandler, appointmentHandler)
+	router := api.NewRouter(companyHandler, userHandler, contractHandler, appointmentHandler)
 
 	const port = ":8080"
 	log.Printf("Servidor subindo na porta %s", port)

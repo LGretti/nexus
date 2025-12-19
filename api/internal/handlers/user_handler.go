@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"nexus/api/internal/models"
-	"nexus/api/internal/repository"
+	"nexus/internal/models"
+	"nexus/internal/repository"
+	"nexus/internal/utils"
 )
 
 // UserHandler lida com as requisições para usuários.
@@ -25,39 +26,36 @@ func NewUserHandler(repo repository.UserRepository) *UserHandler {
 	return handler
 }
 
+// MÉTODOS BASE CUSTOMIZADOS - Apontar para o Handler
+
 // createUserHandler é a implementação customizada para criar um usuário.
 func (h *UserHandler) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := h.newModel()
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 
 	if user.Name == "" {
-		RespondWithError(w, http.StatusBadRequest, "O nome do usuário não pode ser vazio")
+		utils.RespondWithError(w, http.StatusBadRequest, "O nome do usuário não pode ser vazio")
 		return
 	}
 
 	exists, err := h.repo.EmailExists(user.Email)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao verificar e-mail")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao verificar e-mail")
 		return
 	}
 	if exists {
-		RespondWithError(w, http.StatusConflict, "E-mail já cadastrado")
+		utils.RespondWithError(w, http.StatusConflict, "E-mail já cadastrado")
 		return
 	}
 
 	savedUser, err := h.repo.Save(user)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar usuário")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao criar usuário")
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated, savedUser)
-}
-
-// UserHandler delega para o router do handler base.
-func (h *UserHandler) UsersRouterHandler(w http.ResponseWriter, r *http.Request) {
-	h.RouterHandler(w, r)
+	utils.RespondWithJSON(w, http.StatusCreated, savedUser)
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"nexus/api/internal/models"
+	"nexus/internal/models"
 )
 
 // ContractRepository define a interface para as operações com contratos.
@@ -30,13 +30,12 @@ func NewContractRepository(db *sql.DB) ContractRepository {
 }
 
 func (r *postgresContractRepository) GetAllWithCompany() ([]*models.Contract, error) {
-	// AQUI ESTÁ O PULO DO GATO: O JOIN COM COMPANIES
 	query := `
 		SELECT contracts.id
 		      ,contracts.company_id
 					,companies.name
 					,contracts.contract_type
-					,contracts.total_hours
+					,COALESCE(contracts.total_hours,0)
 					,contracts.start_date
 					,contracts.end_date
 					,contracts.is_active

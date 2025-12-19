@@ -16,7 +16,8 @@ import {
   Calendar,
   PieChart,
   ArrowRight,
-  Ghost
+  Ghost,
+  MonitorOff
 } from 'lucide-react';
 import * as api from './services/api';
 import { Company, Contract, User, Appointment } from './types';
@@ -34,6 +35,16 @@ const Alert = ({ message, type = 'error' }: { message: string | null, type?: 'er
       <span>{message}</span>
     </div>
   );
+};
+
+export const formatDuration = (totalSeconds: number): string => {
+  if (!totalSeconds) return "0h00";
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  // padStart(2, '0') garante o "05" em vez de só "5"
+  return `${hours}h${minutes.toString().padStart(2, '0')}`;
 };
 
 const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, type = "button" }: any) => {
@@ -182,7 +193,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Visão Geral</h1>
       
       <Alert message={error} />
 
@@ -197,12 +208,12 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
           <div className="p-6 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-gray-400" /> Recent Activity
+              <Clock className="w-5 h-5 text-gray-400" /> Atividade Recente
             </h3>
           </div>
           <div className="p-0 flex-1">
             {stats.recentActivity.length === 0 ? (
-               <div className="p-6 text-center text-gray-500">No recent activity found.</div>
+               <div className="p-6 text-center text-gray-500">Nenhuma atividade recente encontrada.</div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {stats.recentActivity.map((apt) => (
@@ -212,7 +223,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">
-                        {apt.userName} <span className="text-gray-500 font-normal">logged</span> {apt.totalHours}h
+                        {apt.userName} <span className="text-gray-500 font-normal">usou</span> {formatDuration(apt.durationSeconds)}
                       </p>
                       <p className="text-xs text-blue-600 mt-0.5">{apt.contractTitle}</p>
                       <p className="text-xs text-gray-500 mt-1">{apt.description}</p>
@@ -227,23 +238,23 @@ const Dashboard = () => {
           </div>
           <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
              <Link to="/appointments" className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center gap-1">
-               View all appointments <ArrowRight className="w-4 h-4" />
+               Ver todos os atendimentos <ArrowRight className="w-4 h-4" />
              </Link>
           </div>
         </div>
 
         {/* Welcome / Quick Actions */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl shadow-sm p-8 flex flex-col justify-center">
-          <h2 className="text-2xl font-bold mb-2">Welcome Back</h2>
+          <h2 className="text-2xl font-bold mb-2">Bem-vindo de volta</h2>
           <p className="text-slate-300 mb-6">
-            Manage your contracts and track time efficiently. You have {stats.activeContracts} active contracts running.
+            Gerencie seus contratos e acompanhe o tempo de forma eficiente. Você tem {stats.activeContracts} contratos ativos em andamento.
           </p>
           <div className="flex flex-wrap gap-3">
              <Link to="/contracts" className="bg-white text-slate-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors">
-               Manage Contracts
+               Gerenciar Contratos
              </Link>
              <Link to="/appointments" className="bg-slate-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-600 transition-colors">
-               Log Time
+               Registrar Atividade
              </Link>
           </div>
         </div>
@@ -272,7 +283,7 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
 
   // Calculations
   const totalHours = contract.totalHours;
-  const consumedHours = appointments.reduce((sum, a) => sum + (a.totalHours || 0), 0);
+  const consumedHours = appointments.reduce((sum, a) => sum + ((a.durationSeconds || 0) / 3600), 0);
   const remainingHours = totalHours - consumedHours;
   const progress = Math.min((consumedHours / totalHours) * 100, 100);
 
@@ -300,7 +311,7 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Contract Report" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do Contrato" size="lg">
       <div className="space-y-6">
         {/* Header Info */}
         <div className="flex justify-between items-start">
@@ -319,7 +330,7 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-gray-700">Budget Usage</span>
+            <span className="font-medium text-gray-700">Tempo Utilizado</span>
             <span className="text-gray-500">{consumedHours.toFixed(1)} / {totalHours} hrs</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -332,22 +343,22 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Stat label="Total Budget" value={`${totalHours}h`} />
-          <Stat label="Consumed" value={`${consumedHours.toFixed(1)}h`} />
+          <Stat label="Horas Totais" value={`${totalHours}h`} />
+          <Stat label="Consumidas" value={`${consumedHours.toFixed(1)}h`} />
           <Stat 
-            label="Balance" 
+            label="Saldo" 
             value={`${remainingHours.toFixed(1)}h`} 
             color={remainingHours < 0 ? 'text-red-600' : 'text-green-600'} 
           />
-          <Stat label="Time Left" value={`${daysRemaining} days`} />
+          <Stat label="Tempo Restante" value={`${daysRemaining} dias`} />
         </div>
 
         {/* Burn Rate Analysis */}
         <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 flex items-center justify-between">
            <div>
-             <h4 className="font-semibold text-indigo-900">Burn Rate Analysis</h4>
+             <h4 className="font-semibold text-indigo-900">Média de Consumo Ideal</h4>
              <p className="text-sm text-indigo-700">
-               Actual: <b>{actualBurnRate.toFixed(1)} h/mo</b> vs Ideal: <b>{idealBurnRate.toFixed(1)} h/mo</b>
+               Atual: <b>{actualBurnRate.toFixed(1)} h/mês</b> vs Ideal: <b>{idealBurnRate.toFixed(1)} h/mês</b>
              </p>
            </div>
            {actualBurnRate > idealBurnRate * 1.2 && (
@@ -359,7 +370,7 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
 
         {/* Table */}
         <div className="pt-4 border-t border-gray-100">
-          <h4 className="font-semibold text-gray-900 mb-4">Detailed Appointments</h4>
+          <h4 className="font-semibold text-gray-900 mb-4">Atendimentos Realizados</h4>
           {loading ? (
             <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600"/></div>
           ) : (
@@ -367,10 +378,10 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="px-4 py-2">Date</th>
-                    <th className="px-4 py-2">Consultant</th>
-                    <th className="px-4 py-2">Description</th>
-                    <th className="px-4 py-2 text-right">Hours</th>
+                    <th className="px-4 py-2">Data</th>
+                    <th className="px-4 py-2">Consultor</th>
+                    <th className="px-4 py-2">Descrição</th>
+                    <th className="px-4 py-2 text-right">Horas</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -379,11 +390,11 @@ const ContractReportModal = ({ contract, isOpen, onClose }: { contract: Contract
                       <td className="px-4 py-2 whitespace-nowrap text-gray-500">{new Date(a.startTime).toLocaleDateString()}</td>
                       <td className="px-4 py-2">{a.userName}</td>
                       <td className="px-4 py-2 text-gray-600 truncate max-w-xs">{a.description}</td>
-                      <td className="px-4 py-2 text-right font-medium">{a.totalHours}</td>
+                      <td className="px-4 py-2 text-right font-medium">{formatDuration(a.durationSeconds || 0)}</td>
                     </tr>
                   ))}
                   {appointments.length === 0 && (
-                    <tr><td colSpan={4} className="p-4 text-center text-gray-400">No hours logged yet.</td></tr>
+                    <tr><td colSpan={4} className="p-4 text-center text-gray-400">Ainda não foram registradas atividades nesse contrato.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -462,8 +473,8 @@ const ContractsPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Contracts</h1>
-        <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4 mr-2" /> New Contract</Button>
+        <h1 className="text-2xl font-bold text-gray-900">Contratos</h1>
+        <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4 mr-2" /> Adicionar Contrato</Button>
       </div>
 
       <Alert message={error} />
@@ -472,13 +483,13 @@ const ContractsPage = () => {
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
       ) : contracts.length === 0 ? (
         <EmptyState 
-          title="No Contracts Found" 
-          description="Create your first contract to start tracking hours and budgets."
-          actionLabel="Create Contract"
+          title="Nenhum Contrato Encontrado" 
+          description="Crie seu primeiro contrato para começar a acompanhar horas e atividades."
+          actionLabel="Criar Contrato"
           onAction={() => setIsCreateOpen(true)}
         />
       ) : (
-        <Table headers={['Title', 'Company', 'Type', 'Hours', 'Status', 'Duration', 'Actions']}>
+        <Table headers={['Título', 'Empresa', 'Tipo', 'Horas', 'Status', 'Duração', 'Ações']}>
           {contracts.map(c => (
             <tr key={c.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 font-medium text-gray-900">{c.title}</td>
@@ -487,7 +498,7 @@ const ContractsPage = () => {
               <td className="px-6 py-4 font-mono">{c.totalHours}h</td>
               <td className="px-6 py-4">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${c.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {c.isActive ? 'Active' : 'Inactive'}
+                  {c.isActive ? 'Ativo' : 'Inativo'}
                 </span>
               </td>
               <td className="px-6 py-4 text-xs text-gray-500">
@@ -495,7 +506,7 @@ const ContractsPage = () => {
               </td>
               <td className="px-6 py-4">
                 <Button variant="ghost" onClick={() => setSelectedContract(c)} className="text-xs px-2 py-1">
-                   <BarChart3 className="w-4 h-4 mr-1"/> Report
+                   <BarChart3 className="w-4 h-4 mr-1"/> Relatório
                 </Button>
               </td>
             </tr>
@@ -511,46 +522,46 @@ const ContractsPage = () => {
       />
 
       {/* Create Modal */}
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="New Contract">
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Novo Contrato">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Company</label>
+            <label className="block text-sm font-medium text-gray-700">Empresa</label>
             <select required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.companyId} onChange={e => setFormData({...formData, companyId: Number(e.target.value)})}>
-              <option value={0}>Select a company</option>
+              <option value={0}>Selecione uma empresa</option>
               {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Title</label>
+            <label className="block text-sm font-medium text-gray-700">Título</label>
             <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div>
-              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <label className="block text-sm font-medium text-gray-700">Tipo</label>
               <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.contractType} onChange={e => setFormData({...formData, contractType: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Total Hours</label>
-              <input required type="number" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.totalHours} onChange={e => setFormData({...formData, totalHours: Number(e.target.value)})} />
+              <label className="block text-sm font-medium text-gray-700">Total de Horas</label>
+              <input required type="number" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formatDuration(formData.durationSeconds)} onChange={e => setFormData({...formData, totalHours: Number(e.target.value)})} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div>
-              <label className="block text-sm font-medium text-gray-700">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700">Data de Início</label>
               <input required type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">End Date</label>
+              <label className="block text-sm font-medium text-gray-700">Data de Término</label>
               <input required type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2">
             <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
-            <label htmlFor="isActive" className="text-sm text-gray-700">Contract is Active</label>
+            <label htmlFor="isActive" className="text-sm text-gray-700">O contrato está Ativo</label>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="secondary" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button type="submit">Create Contract</Button>
+            <Button variant="secondary" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+            <Button type="submit">Adicionar Contrato</Button>
           </div>
         </form>
       </Modal>
@@ -607,7 +618,7 @@ const CompaniesPage = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure?")) return;
+    if (!window.confirm("Você deseja desativar esta empresa?")) return;
     try {
       await api.deleteCompany(id);
       loadData();
@@ -625,8 +636,8 @@ const CompaniesPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Companies</h1>
-        <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> Add Company</Button>
+        <h1 className="text-2xl font-bold text-gray-900">Empresas</h1>
+        <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> Adicionar Empresa</Button>
       </div>
 
       <Alert message={error} />
@@ -641,7 +652,7 @@ const CompaniesPage = () => {
           onAction={openCreate}
         />
       ) : (
-        <Table headers={['Name', 'CNPJ', 'Email', 'Actions']}>
+        <Table headers={['Nome', 'CNPJ', 'Email', 'Ações']}>
           {companies.map(c => (
             <tr key={c.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
@@ -650,7 +661,7 @@ const CompaniesPage = () => {
               <td className="px-6 py-4">
                 <div className="flex gap-2">
                   <button onClick={() => handleEdit(c)} className="p-1 hover:bg-blue-100 text-blue-600 rounded"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(c.id)} className="p-1 hover:bg-red-100 text-red-600 rounded"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(c.id)} className="p-1 hover:bg-red-100 text-red-600 rounded"><MonitorOff className="w-4 h-4" /></button>
                 </div>
               </td>
             </tr>
@@ -658,10 +669,10 @@ const CompaniesPage = () => {
         </Table>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Company" : "New Company"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Editar Empresa" : "Nova Empresa"}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <label className="block text-sm font-medium text-gray-700">Nome</label>
             <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-blue-500 focus:border-blue-500" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
           </div>
           <div>
@@ -669,12 +680,12 @@ const CompaniesPage = () => {
             <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-blue-500 focus:border-blue-500" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} placeholder="00.000.000/0000-00" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">E-mail</label>
             <input required type="email" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:ring-blue-500 focus:border-blue-500" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">{editingId ? 'Save Changes' : 'Create Company'}</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">{editingId ? 'Salvar Alterações' : 'Adicionar Empresa'}</Button>
           </div>
         </form>
       </Modal>
@@ -718,8 +729,8 @@ const UsersPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-        <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-2" /> Add User</Button>
+        <h1 className="text-2xl font-bold text-gray-900">Usuários</h1>
+        <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-2" /> Adicionar Usuário</Button>
       </div>
       
       <Alert message={error} />
@@ -728,13 +739,13 @@ const UsersPage = () => {
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
       ) : users.length === 0 ? (
         <EmptyState 
-          title="No Users Found" 
-          description="Add consultants or admins to the system."
-          actionLabel="Add User"
+          title="Nenhum Usuário Encontrado" 
+          description="Adicione consultores ou administradores ao sistema."
+          actionLabel="Adicionar Usuário"
           onAction={() => setIsModalOpen(true)}
         />
       ) : (
-        <Table headers={['Name', 'Email', 'Role']}>
+        <Table headers={['Nome', 'E-mail', 'Função']}>
           {users.map(u => (
             <tr key={u.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 font-medium text-gray-900">{u.name}</td>
@@ -752,23 +763,23 @@ const UsersPage = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="New User">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <label className="block text-sm font-medium text-gray-700">Nome</label>
             <input required type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">E-mail</label>
             <input required type="email" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Role</label>
+            <label className="block text-sm font-medium text-gray-700">Função</label>
             <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value as any})}>
-              <option value="consultant">Consultant</option>
-              <option value="admin">Admin</option>
+              <option value="consultant">Consultor</option>
+              <option value="admin">Administrador</option>
             </select>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Create User</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Adicionar Usuário</Button>
           </div>
         </form>
       </Modal>
@@ -835,7 +846,7 @@ const AppointmentsPage = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this appointment?")) return;
+    if (!window.confirm("Deseja excluir esse registro?")) return;
     try {
       await api.deleteAppointment(id);
       loadData();
@@ -847,8 +858,8 @@ const AppointmentsPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-        <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-2" /> Log Time</Button>
+        <h1 className="text-2xl font-bold text-gray-900">Atendimentos</h1>
+        <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-2" /> Registrar Horas</Button>
       </div>
 
       <Alert message={error} />
@@ -857,23 +868,23 @@ const AppointmentsPage = () => {
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
       ) : appointments.length === 0 ? (
         <EmptyState 
-          title="No Appointments Logged" 
-          description="Log work hours for your active contracts."
-          actionLabel="Log Time"
+          title="Nenhum Atendimento Registrado" 
+          description="Registre horas de trabalho para seus contratos ativos."
+          actionLabel="Registrar Horas"
           onAction={() => setIsModalOpen(true)}
         />
       ) : (
-        <Table headers={['Date', 'User', 'Contract', 'Description', 'Hours', 'Action']}>
+        <Table headers={['Data', 'Usuário', 'Contrato', 'Descrição', 'Horas', 'Ação']}>
           {appointments.map(a => (
             <tr key={a.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 text-sm text-gray-600">
                 <div className="font-medium text-gray-900">{formatDate(a.startTime)}</div>
-                <div className="text-xs">to {formatDate(a.endTime).split(' ')[2]}</div>
+                <div className="text-xs">até {formatDate(a.endTime).split(' ')[2]}</div>
               </td>
               <td className="px-6 py-4 font-medium text-gray-900">{a.userName}</td>
               <td className="px-6 py-4 text-blue-600 text-sm">{a.contractTitle}</td>
               <td className="px-6 py-4 text-gray-500 truncate max-w-xs">{a.description}</td>
-              <td className="px-6 py-4 font-bold text-gray-800">{a.totalHours}h</td>
+              <td className="px-6 py-4 font-bold text-gray-800">{formatDuration(a.durationSeconds)}</td>
               <td className="px-6 py-4">
                 <button onClick={() => handleDelete(a.id)} className="p-1 hover:bg-red-100 text-red-600 rounded"><Trash2 className="w-4 h-4" /></button>
               </td>
@@ -885,36 +896,36 @@ const AppointmentsPage = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Log Time">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Contract</label>
+            <label className="block text-sm font-medium text-gray-700">Contrato</label>
             <select required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.contractId} onChange={e => setFormData({...formData, contractId: Number(e.target.value)})}>
-              <option value={0}>Select Contract</option>
+              <option value={0}>Selecione o Contrato</option>
               {contracts.filter(c => c.isActive).map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Consultant</label>
+            <label className="block text-sm font-medium text-gray-700">Consultor</label>
             <select required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.userId} onChange={e => setFormData({...formData, userId: Number(e.target.value)})}>
-              <option value={0}>Select User</option>
+              <option value={0}>Selecione o Consultor</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Start Time</label>
+              <label className="block text-sm font-medium text-gray-700">Hora de Início</label>
               <input required type="datetime-local" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">End Time</label>
+              <label className="block text-sm font-medium text-gray-700">Hora de Término</label>
               <input required type="datetime-local" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea required rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="What did you work on?" />
+            <label className="block text-sm font-medium text-gray-700">Descrição</label>
+            <textarea required rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Descreva o atendimento realizado" />
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Log Time</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Registrar Horas</Button>
           </div>
         </form>
       </Modal>
@@ -928,11 +939,11 @@ const AppointmentsPage = () => {
 const Layout = ({ children }: { children?: React.ReactNode }) => {
   const location = useLocation();
   const navItems = [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Companies', icon: Building2, path: '/companies' },
-    { label: 'Contracts', icon: FileText, path: '/contracts' },
-    { label: 'Users', icon: Users, path: '/users' },
-    { label: 'Appointments', icon: Clock, path: '/appointments' },
+    { label: 'Início', icon: LayoutDashboard, path: '/' },
+    { label: 'Empresas', icon: Building2, path: '/companies' },
+    { label: 'Contratos', icon: FileText, path: '/contracts' },
+    { label: 'Usuários', icon: Users, path: '/users' },
+    { label: 'Atendimentos', icon: Clock, path: '/appointments' },
   ];
 
   return (
@@ -941,9 +952,9 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
       <aside className="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col border-r border-slate-800">
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-            <span className="font-bold text-white">N</span>
+            <span className="font-bold text-white">C5</span>
           </div>
-          <span className="text-lg font-bold tracking-tight">Nexus ERP</span>
+          <span className="text-lg font-bold tracking-tight">Nexus</span>
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -973,8 +984,8 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
               <Users className="w-4 h-4 text-slate-300" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Admin User</p>
-              <p className="text-xs text-slate-500">admin@nexus.com</p>
+              <p className="text-sm font-medium text-white">Administrador</p>
+              <p className="text-xs text-slate-500">Gretti@c5.com</p>
             </div>
           </div>
         </div>
@@ -984,7 +995,7 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header (Placeholder for mobile toggle if needed) */}
         <div className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between">
-          <span className="font-bold">Nexus ERP</span>
+          <span className="font-bold">Nexus</span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8">

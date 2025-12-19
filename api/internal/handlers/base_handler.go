@@ -7,8 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"nexus/api/internal/models"
-	"nexus/api/internal/repository"
+	"nexus/internal/models"
+	"nexus/internal/repository"
+	"nexus/internal/utils"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // BaseHandler é um handler genérico para operações CRUD.
@@ -49,7 +52,7 @@ func (h *BaseHandler[T]) RouterHandler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPost:
 			h.CreateHandler(w, r)
 		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /"+h.routeName)
+			utils.RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /"+h.routeName)
 		}
 	} else {
 		switch r.Method {
@@ -60,7 +63,7 @@ func (h *BaseHandler[T]) RouterHandler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodDelete:
 			h.DeleteHandler(w, r)
 		default:
-			RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /"+h.routeName+"/{id}")
+			utils.RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido para /"+h.routeName+"/{id}")
 		}
 	}
 }
@@ -74,87 +77,100 @@ func (h *BaseHandler[T]) newModel() T {
 func (h *BaseHandler[T]) createHandlerDefault(w http.ResponseWriter, r *http.Request) {
 	model := h.newModel()
 	if err := json.NewDecoder(r.Body).Decode(&model); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 	savedModel, err := h.repo.Save(model)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao criar "+h.routeName+": "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao criar "+h.routeName+": "+err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusCreated, savedModel)
+	utils.RespondWithJSON(w, http.StatusCreated, savedModel)
 }
 
 func (h *BaseHandler[T]) getAllHandlerDefault(w http.ResponseWriter, _ *http.Request) {
 	models, err := h.repo.Get(nil)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao obter "+h.routeName+": "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao obter "+h.routeName+": "+err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, models)
+	utils.RespondWithJSON(w, http.StatusOK, models)
 }
 
 func (h *BaseHandler[T]) getByIDHandlerDefault(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
 	models, err := h.repo.Get(&id)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar "+h.routeName+": "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar "+h.routeName+": "+err.Error())
 		return
 	}
 	if len(models) == 0 {
-		RespondWithError(w, http.StatusNotFound, h.routeName+" não encontrado")
+		utils.RespondWithError(w, http.StatusNotFound, h.routeName+" não encontrado")
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, models[0])
+	utils.RespondWithJSON(w, http.StatusOK, models[0])
 }
 
 func (h *BaseHandler[T]) updateHandlerDefault(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
 	model := h.newModel()
 	if err := json.NewDecoder(r.Body).Decode(&model); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 	model.SetID(id)
 	rowsAffected, err := h.repo.Update(model)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar "+h.routeName+": "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar "+h.routeName+": "+err.Error())
 		return
 	}
 	if rowsAffected == 0 {
-		RespondWithError(w, http.StatusNotFound, h.routeName+" não encontrado")
+		utils.RespondWithError(w, http.StatusNotFound, h.routeName+" não encontrado")
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, model)
+	utils.RespondWithJSON(w, http.StatusOK, model)
 }
 
 func (h *BaseHandler[T]) deleteHandlerDefault(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
 	rowsAffected, err := h.repo.Delete(id)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar "+h.routeName+": "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao deletar "+h.routeName+": "+err.Error())
 		return
 	}
 	if rowsAffected == 0 {
-		RespondWithError(w, http.StatusNotFound, h.routeName+" não encontrado")
+		utils.RespondWithError(w, http.StatusNotFound, h.routeName+" não encontrado")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *BaseHandler[T]) parseID(r *http.Request) (int64, error) {
-	path := strings.TrimPrefix(r.URL.Path, "/"+h.routeName+"/")
-	return strconv.ParseInt(path, 10, 64)
+	// 1. Tenta obter o ID via Chi Router (param "id") - Mais seguro e correto para sua estrutura
+	if idStr := chi.URLParam(r, "id"); idStr != "" {
+		return strconv.ParseInt(idStr, 10, 64)
+	}
+
+	// 2. Fallback: Tenta extrair da URL manualmente (último segmento)
+	// Isso resolve o problema de prefixos como /api/companies/ se o Chi falhar
+	parts := strings.Split(r.URL.Path, "/")
+	// Itera de trás para frente para pegar o último segmento válido (ignora barras finais)
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" {
+			return strconv.ParseInt(parts[i], 10, 64)
+		}
+	}
+	return 0, strconv.ErrSyntax
 }

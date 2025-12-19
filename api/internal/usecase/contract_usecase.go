@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"nexus/api/internal/models"
-	"nexus/api/internal/repository"
+	"nexus/internal/models"
+	"nexus/internal/repository"
 )
 
 type ContractUsecase interface {

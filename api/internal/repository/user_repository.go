@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"nexus/api/internal/models"
+	"nexus/internal/models"
 )
 
 // UserRepository define a interface para as operações com usuários.

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"nexus/api/internal/models"
-	"nexus/api/internal/repository"
+	"nexus/internal/models"
+	"nexus/internal/repository"
+	"nexus/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -24,7 +25,7 @@ func NewAppointmentHandler(repo repository.AppointmentRepository) *AppointmentHa
 	}
 
 	handler.CreateHandler = handler.CreateAppointmentHandler
-	handler.GetAllHandler = handler.ListAllWithDetails
+	handler.GetAllHandler = handler.ListAllAppointmentsWithDetails
 
 	return handler
 }
@@ -45,7 +46,7 @@ func NewAppointmentHandler(repo repository.AppointmentRepository) *AppointmentHa
 func (h *AppointmentHandler) CreateAppointmentHandler(w http.ResponseWriter, r *http.Request) {
 	appt := h.newModel()
 	if err := json.NewDecoder(r.Body).Decode(&appt); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "JSON inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
 
@@ -53,7 +54,7 @@ func (h *AppointmentHandler) CreateAppointmentHandler(w http.ResponseWriter, r *
 	// Se EndTime for nil (nulo), ignora essa validação.
 	if appt.EndTime != nil {
 		if appt.EndTime.Before(appt.StartTime) {
-			RespondWithError(w, http.StatusBadRequest, "A data de fim não pode ser anterior ao início")
+			utils.RespondWithError(w, http.StatusBadRequest, "A data de fim não pode ser anterior ao início")
 			return
 		}
 	}
@@ -61,20 +62,20 @@ func (h *AppointmentHandler) CreateAppointmentHandler(w http.ResponseWriter, r *
 	// Grava no banco (O repositório deve estar preparado para aceitar nil)
 	savedAppt, err := h.repo.Save(appt)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao salvar apontamento: "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao salvar apontamento: "+err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusCreated, savedAppt)
+	utils.RespondWithJSON(w, http.StatusCreated, savedAppt)
 }
 
 // AppontmentsRouterHandler decide qual handler chamar com base na URL.
-func (h *AppointmentHandler) ListAllWithDetails(w http.ResponseWriter, r *http.Request) {
+func (h *AppointmentHandler) ListAllAppointmentsWithDetails(w http.ResponseWriter, r *http.Request) {
 	appointments, err := h.repo.GetAllWithContract()
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, appointments)
+	utils.RespondWithJSON(w, http.StatusOK, appointments)
 }
 
 // MÉTODOS ESPECÍFICOS - Apontar para o router
@@ -94,16 +95,16 @@ func (h *AppointmentHandler) ListAppointmentsByContract(w http.ResponseWriter, r
 	idStr := chi.URLParam(r, "contractID")
 	contractID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID do contrato inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "ID do contrato inválido")
 		return
 	}
 
 	appointments, err := h.repo.GetByContractID(contractID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, appointments)
+	utils.RespondWithJSON(w, http.StatusOK, appointments)
 }
 
 // ListAppointmentsByUser godoc
@@ -121,20 +122,20 @@ func (h *AppointmentHandler) ListAppointmentsByUser(w http.ResponseWriter, r *ht
 	idStr := chi.URLParam(r, "userID")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "ID do usuário inválido")
+		utils.RespondWithError(w, http.StatusBadRequest, "ID do usuário inválido")
 		return
 	}
 
 	appointments, err := h.repo.GetByUserID(userID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar histórico: "+err.Error())
+		utils.RespondWithError(w, http.StatusInternalServerError, "Erro ao buscar histórico: "+err.Error())
 		return
 	}
 
 	if appointments == nil {
-		RespondWithJSON(w, http.StatusOK, []*models.Appointment{})
+		utils.RespondWithJSON(w, http.StatusOK, []*models.Appointment{})
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, appointments)
+	utils.RespondWithJSON(w, http.StatusOK, appointments)
 }
